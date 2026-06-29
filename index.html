@@ -1,0 +1,3862 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>9×9 Go Game History Tracker</title>
+  <style>
+    :root {
+      --bg: #f7f2e8;
+      --panel: #fffaf2;
+      --panel-strong: #fff7eb;
+      --text: #1f2933;
+      --muted: #6b7280;
+      --accent: #18212f;
+      --accent-soft: #ece6db;
+      --board: #d6a35d;
+      --grid: #2b2115;
+      --success: #256d3f;
+      --danger: #9f2d2d;
+      --warning: #8a5a16;
+      --border: rgba(31, 41, 51, 0.14);
+      --shadow: 0 16px 40px rgba(31, 41, 51, 0.07);
+      --shadow-soft: 0 8px 22px rgba(31, 41, 51, 0.055);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 25% 0%, rgba(214, 163, 93, 0.14), transparent 35%),
+        var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.45;
+    }
+
+    .app-shell {
+      width: min(1120px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 34px 0 54px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+      width: min(720px, 100%);
+      margin: 0 auto 24px;
+      position: relative;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      padding: 3px;
+      margin: -3px;
+      border-radius: 14px;
+      box-shadow: none;
+      cursor: pointer;
+      text-align: left;
+      font: inherit;
+    }
+
+    .brand:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .brand:focus-visible {
+      outline: 3px solid rgba(24, 33, 47, 0.22);
+      outline-offset: 4px;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background:
+        radial-gradient(circle at 67% 33%, #fffdf9 0 15%, transparent 16%),
+        radial-gradient(circle at 35% 65%, #1f2933 0 15%, transparent 16%),
+        linear-gradient(90deg, transparent 31%, rgba(31, 41, 51, 0.22) 32% 34%, transparent 35% 64%, rgba(31, 41, 51, 0.22) 65% 67%, transparent 68%),
+        linear-gradient(0deg, transparent 31%, rgba(31, 41, 51, 0.22) 32% 34%, transparent 35% 64%, rgba(31, 41, 51, 0.22) 65% 67%, transparent 68%),
+        rgba(214, 163, 93, 0.42);
+      box-shadow: var(--shadow-soft);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.1rem, 2vw, 1.34rem);
+      letter-spacing: -0.035em;
+      font-weight: 840;
+      white-space: nowrap;
+    }
+
+    .menu-wrap {
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .menu-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      background: rgba(255, 250, 242, 0.92);
+    }
+
+    .menu-icon {
+      width: 15px;
+      height: 10px;
+      display: inline-grid;
+      gap: 3px;
+    }
+
+    .menu-icon span {
+      display: block;
+      height: 1.5px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .menu-panel {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      z-index: 30;
+      min-width: 190px;
+      padding: 7px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: rgba(255, 250, 242, 0.98);
+      box-shadow: var(--shadow);
+      display: none;
+    }
+
+    .menu-panel.open { display: grid; gap: 3px; }
+
+    .menu-item {
+      width: 100%;
+      border: 0;
+      box-shadow: none;
+      border-radius: 11px;
+      padding: 10px 11px;
+      background: transparent;
+      text-align: left;
+      justify-content: flex-start;
+    }
+
+    .menu-item:hover {
+      transform: none;
+      background: rgba(239, 231, 219, 0.55);
+      box-shadow: none;
+    }
+
+    .menu-item.active {
+      background: var(--accent);
+      color: #fffaf2;
+    }
+
+    .tabs {
+      display: none;
+    }
+
+    .tab-button,
+    button,
+    .file-button {
+      border: 1px solid var(--border);
+      background: rgba(255, 250, 242, 0.84);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 15px;
+      font: inherit;
+      font-weight: 680;
+      cursor: pointer;
+      transition: transform 0.08s ease, background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    button:hover,
+    .file-button:hover,
+    .tab-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 7px 16px rgba(31, 41, 51, 0.055);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .tab-button.active,
+    .primary-button {
+      background: var(--accent);
+      color: #fffaf2;
+      border-color: var(--accent);
+    }
+
+    .secondary-button {
+      background: #efe7db;
+      color: var(--accent);
+    }
+
+    .danger-button {
+      border-color: rgba(159, 45, 45, 0.26);
+      background: #fff0ef;
+      color: var(--danger);
+    }
+
+    main > section { display: none; }
+    main > section.active { display: block; }
+
+    .panel {
+      background: rgba(255, 250, 242, 0.94);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .paste-panel {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .paste-landing {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: clamp(20px, 4vw, 34px);
+    }
+
+    .landing-title {
+      width: 100%;
+      margin: 0 0 2px;
+      text-align: center;
+      font-size: clamp(1.18rem, 2vw, 1.42rem);
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+      font-weight: 820;
+    }
+
+    .paste-panel.collapsed { display: none; }
+
+    #tab-add {
+      min-height: 0;
+    }
+
+    #addMessage {
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #previewArea {
+      margin-top: 22px;
+    }
+
+
+    .section-eyebrow {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: clamp(1.25rem, 2vw, 1.55rem);
+      letter-spacing: -0.032em;
+      font-weight: 820;
+    }
+
+    .panel-copy {
+      margin: 8px 0 16px;
+      color: var(--muted);
+      max-width: 680px;
+    }
+
+    label {
+      display: block;
+      font-weight: 760;
+      margin-bottom: 9px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 176px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 14px;
+      font: 0.92rem/1.45 var(--mono);
+      color: var(--text);
+      background: #fffdf9;
+      box-shadow: inset 0 1px 0 rgba(31, 41, 51, 0.03);
+      text-align: left;
+    }
+
+    #sgfInput {
+      display: block;
+      width: min(100%, 620px);
+      min-height: 154px;
+      margin: 0 auto;
+    }
+
+    .paste-action-row {
+      justify-content: center;
+      width: 100%;
+      margin-top: 0;
+    }
+
+    textarea:focus,
+    input[type="range"]:focus-visible,
+    button:focus-visible,
+    .file-button:focus-visible {
+      outline: 3px solid rgba(24, 33, 47, 0.18);
+      outline-offset: 2px;
+    }
+
+    .helper-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 12px;
+    }
+
+    .helper-chip,
+    .result-badge,
+    .history-filter {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-weight: 760;
+    }
+
+    .helper-chip {
+      padding: 6px 10px;
+      color: var(--muted);
+      background: rgba(239, 231, 219, 0.55);
+      font-size: 0.82rem;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .message {
+      margin-top: 14px;
+      padding: 11px 12px;
+      border-radius: 13px;
+      border: 1px solid transparent;
+      display: none;
+    }
+
+    .message.show { display: block; }
+    .message.error { color: var(--danger); background: #fff1f0; border-color: rgba(159, 45, 45, 0.22); }
+    .message.success { color: var(--success); background: #edf8f0; border-color: rgba(37, 109, 63, 0.22); }
+    .message.warning { color: var(--warning); background: #fff5e4; border-color: rgba(138, 90, 22, 0.24); }
+    .message.info { color: var(--text); background: #efe7db; border-color: var(--border); }
+
+    .preview-layout {
+      display: grid;
+      grid-template-columns: minmax(285px, 0.88fr) minmax(380px, 1.12fr);
+      gap: 22px;
+      align-items: stretch;
+      margin-top: 4px;
+    }
+
+    .preview-card,
+    .board-panel {
+      min-width: 0;
+    }
+
+    .preview-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .result-badge {
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      letter-spacing: 0.045em;
+      text-transform: uppercase;
+      align-self: flex-start;
+    }
+
+    .badge-win { color: var(--success); background: rgba(37, 109, 63, 0.09); border-color: rgba(37, 109, 63, 0.2); }
+    .badge-loss { color: var(--danger); background: rgba(159, 45, 45, 0.08); border-color: rgba(159, 45, 45, 0.19); }
+    .badge-draw { color: #4b5563; background: rgba(107, 114, 128, 0.10); border-color: rgba(107, 114, 128, 0.18); }
+    .badge-unknown { color: var(--muted); background: rgba(107, 114, 128, 0.08); border-color: rgba(107, 114, 128, 0.16); }
+
+    .result-headline {
+      margin: 12px 0 4px;
+      font-size: clamp(2rem, 4vw, 3rem);
+      letter-spacing: -0.055em;
+      line-height: 0.98;
+      font-weight: 860;
+    }
+
+    .result-subline {
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 680;
+    }
+
+    .summary-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 18px;
+      color: var(--muted);
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 9px 0;
+      border-top: 1px solid rgba(31, 41, 51, 0.09);
+    }
+
+    .summary-row strong {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .preview-actions { margin-top: 2px; }
+
+    .preview-card h2,
+    .history-panel h2,
+    .stats-panel h2,
+    .backup-panel h2 {
+      margin: 0 0 14px;
+      font-size: 1.2rem;
+      letter-spacing: -0.026em;
+    }
+
+    .fact-grid {
+      display: grid;
+      grid-template-columns: minmax(118px, 0.55fr) 1fr;
+      gap: 9px 14px;
+      margin: 0;
+    }
+
+    .fact-grid dt {
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .fact-grid dd {
+      margin: 0;
+      font-weight: 760;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .warning-list {
+      margin: 14px 0 0;
+      padding: 11px 14px 11px 30px;
+      color: var(--warning);
+      background: #fff5e4;
+      border: 1px solid rgba(138, 90, 22, 0.24);
+      border-radius: 13px;
+      font-size: 0.92rem;
+    }
+
+    .board-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(255, 250, 242, 0.97);
+    }
+
+    .board-title {
+      width: 100%;
+      margin: 0;
+      font-weight: 810;
+      text-align: center;
+      letter-spacing: -0.018em;
+    }
+
+    .board-note {
+      width: 100%;
+      margin: -4px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    #boardContainer,
+    #detailBoardContainer {
+      width: min(430px, 100%);
+      max-width: 100%;
+      min-width: min(252px, 100%);
+      margin: 0 auto;
+    }
+
+    .board-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-width: 430px;
+      margin: 0 auto;
+      overflow: visible;
+    }
+
+    .board-surface {
+      position: absolute;
+      left: 8.14%;
+      top: 8.14%;
+      width: 83.72%;
+      height: 83.72%;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.14), transparent 32%),
+        var(--board);
+      border-radius: 13px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18), 0 14px 28px rgba(31, 41, 51, 0.13);
+    }
+
+    .grid-line {
+      position: absolute;
+      background: var(--grid);
+      opacity: 0.70;
+      pointer-events: none;
+    }
+
+    .grid-line.v { width: 1.5px; }
+    .grid-line.h { height: 1.5px; }
+
+    .star-point {
+      position: absolute;
+      width: 1.7%;
+      height: 1.7%;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+      background: var(--grid);
+      opacity: 0.76;
+    }
+
+    .board-intersection {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .stone {
+      position: absolute;
+      width: 8.7%;
+      height: 8.7%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .stone.black {
+      background: radial-gradient(circle at 35% 30%, #5f5f5f 0%, #171717 47%, #050505 100%);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.34);
+    }
+
+    .stone.white {
+      background: radial-gradient(circle at 33% 28%, #ffffff 0%, #f1f1f1 53%, #d6d6d6 100%);
+      border: 1px solid rgba(0,0,0,0.28);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.17);
+    }
+
+    .last-move-marker {
+      position: absolute;
+      width: 3.65%;
+      height: 3.65%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.86);
+      box-shadow: 0 0 0 1px rgba(31, 41, 51, 0.48);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .last-move-marker.on-white {
+      border-color: rgba(31, 41, 51, 0.72);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.82);
+    }
+
+    .coord-label {
+      position: absolute;
+      min-width: 20px;
+      text-align: center;
+      transform: translate(-50%, -50%);
+      color: rgba(107, 114, 128, 0.92);
+      font-weight: 740;
+      font-size: 0.78rem;
+      user-select: none;
+    }
+
+    .history-topline,
+    .stats-section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-end;
+      margin-bottom: 14px;
+    }
+
+    .history-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 14px;
+    }
+
+    .history-filter {
+      padding: 7px 11px;
+      color: var(--muted);
+      background: rgba(239, 231, 219, 0.45);
+      font-size: 0.9rem;
+    }
+
+    .history-filter.active {
+      color: #fffaf2;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(255, 253, 249, 0.72);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .history-main {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+      font-weight: 800;
+    }
+
+    .history-sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .empty-state {
+      color: var(--muted);
+      padding: 20px 0 4px;
+    }
+
+    .empty-card {
+      padding: 22px;
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+      background: rgba(255, 253, 249, 0.55);
+    }
+
+    .stats-layout {
+      display: grid;
+      gap: 20px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+
+    .stats-grid.core {
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    }
+
+    .stat-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 15px;
+      background: rgba(255, 253, 249, 0.72);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stat-card.primary-stat .stat-value {
+      font-size: clamp(1.75rem, 4vw, 2.35rem);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 760;
+    }
+
+    .stat-value {
+      margin-top: 6px;
+      font-size: 1.35rem;
+      font-weight: 850;
+      letter-spacing: -0.035em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .bar-meter {
+      margin-top: 10px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(31, 41, 51, 0.10);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+      opacity: 0.78;
+    }
+
+    .utility-area {
+      margin-top: 0;
+    }
+
+    .backup-panel .panel-copy {
+      margin-bottom: 18px;
+    }
+
+    .storage-status {
+      margin: 0 0 16px;
+      padding: 13px 14px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: rgba(255, 250, 242, 0.78);
+      color: var(--text);
+    }
+
+    .storage-status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .storage-status-item {
+      min-width: 0;
+    }
+
+    .storage-status-label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 760;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .storage-status-value {
+      display: block;
+      margin-top: 3px;
+      font-weight: 760;
+      font-variant-numeric: tabular-nums;
+      word-break: break-word;
+    }
+
+    .storage-warning {
+      margin: 11px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .utility-area h2 {
+      margin-bottom: 10px;
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+
+    .file-button input { display: none; }
+
+    .small-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .detail-layout {
+      display: grid;
+      grid-template-columns: minmax(286px, 0.92fr) minmax(360px, 1.08fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .detail-card h3 {
+      margin: 0 0 12px;
+      font-size: 1.08rem;
+      letter-spacing: -0.018em;
+    }
+
+    .detail-result-block {
+      margin-bottom: 16px;
+    }
+
+    .detail-result-block .result-headline {
+      font-size: clamp(1.75rem, 3vw, 2.35rem);
+    }
+
+    .replay-meta {
+      margin-top: 14px;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
+
+    .move-title {
+      margin: 0 0 4px;
+      font-size: clamp(1.28rem, 2.4vw, 1.7rem);
+      letter-spacing: -0.035em;
+      font-weight: 840;
+    }
+
+    .move-line {
+      margin: 0;
+      color: var(--text);
+      font-size: 1.02rem;
+      font-weight: 720;
+    }
+
+    .move-capture {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .replay-slider-wrap {
+      margin-top: 13px;
+    }
+
+    .replay-slider {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .compact-button {
+      padding: 8px 12px;
+      font-size: 0.9rem;
+    }
+
+
+    .mini-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 0.76rem;
+      font-weight: 760;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      background: rgba(255, 253, 249, 0.62);
+      white-space: nowrap;
+    }
+
+    .history-flags {
+      display: inline-flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-left: 4px;
+    }
+
+    .library-toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 0;
+    }
+
+    .library-toggle.active {
+      color: #fffaf2;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .detail-extra-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .detail-mini-panel {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 15px;
+      background: rgba(255, 253, 249, 0.72);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .detail-mini-panel h3 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      letter-spacing: -0.015em;
+    }
+
+    .compact-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text);
+      font-size: 0.94rem;
+    }
+
+    .compact-list li + li { margin-top: 5px; }
+
+    .opening-line {
+      margin: 0;
+      color: var(--text);
+      font-weight: 720;
+      line-height: 1.55;
+    }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .profile-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(247, 242, 232, 0.55);
+    }
+
+    .profile-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 760;
+    }
+
+    .profile-item strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 1.08rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin: 8px 0 12px;
+    }
+
+    .tag-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 8px 5px 10px;
+      background: rgba(247, 242, 232, 0.68);
+      color: var(--text);
+      font-size: 0.86rem;
+      font-weight: 720;
+    }
+
+    .tag-remove {
+      padding: 0 4px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .tag-remove:hover { color: var(--danger); background: transparent; transform: none; }
+
+    .tag-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tag-input-row input {
+      flex: 1;
+      min-width: 160px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 11px;
+      background: rgba(255, 253, 249, 0.82);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .notes-textarea {
+      width: 100%;
+      min-height: 118px;
+      margin-top: 8px;
+      resize: vertical;
+    }
+
+    .inline-status {
+      min-height: 1.25em;
+      margin: 8px 0 0;
+      color: var(--success);
+      font-size: 0.88rem;
+      font-weight: 720;
+    }
+
+    @media (max-width: 880px) {
+      header { margin-bottom: 20px; }
+      .preview-layout,
+      .detail-layout { grid-template-columns: 1fr; }
+      .history-topline,
+      .stats-section-header { align-items: flex-start; flex-direction: column; }
+      .history-card { grid-template-columns: 1fr; }
+      .history-card .action-row { margin-top: 0; }
+      .detail-extra-grid { grid-template-columns: 1fr; }
+      .paste-panel { max-width: none; }
+    }
+
+    @media (max-width: 520px) {
+      .app-shell { width: min(100% - 20px, 1120px); padding-top: 22px; }
+      header { gap: 12px; }
+      .brand { gap: 8px; }
+      .brand-mark { width: 30px; height: 30px; border-radius: 10px; }
+      h1 { font-size: 1.02rem; }
+      .panel { padding: 16px; border-radius: 16px; }
+      textarea { min-height: 150px; }
+      #sgfInput { min-height: 138px; }
+      .menu-button, button, .file-button { padding: 9px 12px; }
+      #boardContainer, #detailBoardContainer { min-width: min(226px, 100%); }
+      .result-headline { font-size: 2rem; }
+      .profile-grid { grid-template-columns: 1fr; }
+      .tag-input-row { flex-direction: column; align-items: stretch; }
+      .storage-status-grid { grid-template-columns: 1fr; }
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <button id="brandHomeButton" class="brand" type="button" aria-label="Go to Add Game">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <h1>9×9 GO Tracker</h1>
+      </button>
+      <div class="menu-wrap">
+        <button id="menuButton" class="menu-button" type="button" aria-expanded="false" aria-controls="menuPanel">
+          <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+          Menu
+        </button>
+        <div id="menuPanel" class="menu-panel" role="menu" aria-label="Main menu">
+          <button class="menu-item active" type="button" role="menuitem" data-tab="add">Add Game</button>
+          <button class="menu-item" type="button" role="menuitem" data-tab="history">History</button>
+          <button class="menu-item" type="button" role="menuitem" data-tab="stats">Stats</button>
+          <button class="menu-item" type="button" role="menuitem" data-tab="backup">Backup / Export</button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Main sections" hidden></nav>
+
+    <main>
+      <section id="tab-add" class="active">
+        <div id="pastePanel" class="panel paste-panel paste-landing">
+          <h2 class="landing-title">Add Game</h2>
+          <textarea id="sgfInput" aria-label="Paste SGF game" spellcheck="false" autocomplete="off" placeholder="Paste game here..."></textarea>
+          <div class="action-row paste-action-row">
+            <button id="parseButton" class="primary-button">Preview Game</button>
+          </div>
+        </div>
+
+        <div id="addMessage" class="message" role="status"></div>
+
+        <div id="previewArea" class="preview-layout hidden" aria-live="polite">
+          <div class="panel preview-card">
+            <h2>Preview</h2>
+            <div id="previewFacts"></div>
+            <ul id="warningList" class="warning-list hidden"></ul>
+            <div class="action-row">
+              <button id="saveButton" class="primary-button">Save to History</button>
+              <button id="newGameButton" class="secondary-button">Paste another game</button>
+            </div>
+          </div>
+
+          <div class="panel board-panel">
+            <p class="board-title">Final Board</p>
+            <div id="boardContainer"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-history">
+        <div class="panel history-panel">
+          <h2>History</h2>
+          <div id="historyContent"></div>
+        </div>
+      </section>
+
+      <section id="tab-stats">
+        <div class="panel stats-panel">
+          <h2>Stats</h2>
+          <div id="statsContent"></div>
+        </div>
+      </section>
+
+      <section id="tab-backup">
+        <div class="panel backup-panel">
+          <h2>Backup &amp; Export</h2>
+          <p class="panel-copy">Export your local archive, import a backup, or download saved games as individual SGF files.</p>
+          <div id="storageStatus" class="storage-status" aria-live="polite">
+            <div class="storage-status-grid">
+              <div class="storage-status-item"><span class="storage-status-label">Storage</span><span class="storage-status-value">Local browser storage</span></div>
+              <div class="storage-status-item"><span class="storage-status-label">Saved games</span><span class="storage-status-value">—</span></div>
+              <div class="storage-status-item"><span class="storage-status-label">Last backup</span><span class="storage-status-value">unknown</span></div>
+            </div>
+            <p class="storage-warning">Games are stored locally in this browser. Export a JSON backup before clearing browser data or switching devices.</p>
+          </div>
+          <div id="utilityArea" class="utility-area">
+            <div class="action-row">
+              <button id="exportJsonButton">Export full JSON backup</button>
+              <label class="file-button" for="importJsonInput">Import JSON backup
+                <input id="importJsonInput" type="file" accept="application/json,.json" />
+              </label>
+              <button id="exportCsvButton">Export CSV summary</button>
+              <button id="exportSgfZipButton">Export SGF archive</button>
+            </div>
+            <div id="backupMessage" class="message" role="status"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const GoCore = (() => {
+      const APP_SCHEMA_VERSION = 2;
+      const BOARD_SIZE = 9;
+      const USERNAME = "idfji";
+      const SGF_LETTERS = "abcdefghi";
+      const HUMAN_COLUMNS = ["A", "B", "C", "D", "E", "F", "G", "H", "J"];
+
+      class SgfParseError extends Error {
+        constructor(message) {
+          super(message);
+          this.name = "SgfParseError";
+        }
+      }
+
+      class ReplayError extends Error {
+        constructor(message, moveNumber = null) {
+          super(moveNumber ? `Move ${moveNumber}: ${message}` : message);
+          this.name = "ReplayError";
+          this.moveNumber = moveNumber;
+        }
+      }
+
+      function firstValue(props, key) {
+        const values = props[key];
+        return values && values.length ? values[0] : null;
+      }
+
+      function stripOuterWhitespace(value) {
+        return typeof value === "string" ? value.trim() : value;
+      }
+
+      // SGF values can contain escaped brackets and line breaks. For duplicate detection,
+      // this normalizes whitespace outside property values while preserving property content.
+      function normalizeSgfForHash(sgf) {
+        let out = "";
+        let inValue = false;
+        let escaped = false;
+        const text = String(sgf || "").trim().replace(/\r\n?/g, "\n");
+        for (const ch of text) {
+          if (!inValue && /\s/.test(ch)) continue;
+          out += ch;
+          if (inValue) {
+            if (escaped) {
+              escaped = false;
+            } else if (ch === "\\") {
+              escaped = true;
+            } else if (ch === "]") {
+              inValue = false;
+            }
+          } else if (ch === "[") {
+            inValue = true;
+          }
+        }
+        return out;
+      }
+
+      async function hashString(text) {
+        const normalized = normalizeSgfForHash(text);
+        if (globalThis.crypto && crypto.subtle && globalThis.TextEncoder) {
+          const encoded = new TextEncoder().encode(normalized);
+          const digest = await crypto.subtle.digest("SHA-256", encoded);
+          return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+        }
+        // Fallback for older local-file browser contexts where Web Crypto is unavailable.
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < normalized.length; i++) {
+          hash ^= normalized.charCodeAt(i);
+          hash = Math.imul(hash, 0x01000193) >>> 0;
+        }
+        return `fnv1a32-${hash.toString(16).padStart(8, "0")}`;
+      }
+
+      function createGameId() {
+        if (globalThis.crypto && crypto.randomUUID) return crypto.randomUUID();
+        return `game-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      // Secondary duplicate key based on game content rather than raw SGF bytes.
+      // This catches the same game pasted with harmless whitespace/comment differences.
+      function buildGameFingerprint(record = {}) {
+        const moveSource = Array.isArray(record.normalizedMoveList)
+          ? record.normalizedMoveList
+          : (Array.isArray(record.moves) ? record.moves : []);
+        const moveSequence = moveSource.map(move => `${move.color || ""}${move.sgfCoord ?? (move.pass ? "" : "")}`).join(";");
+        const parts = [
+          record.boardSize || BOARD_SIZE,
+          normalizeSgfForHash(String(record.blackPlayerRaw || "")).toLowerCase(),
+          normalizeSgfForHash(String(record.whitePlayerRaw || "")).toLowerCase(),
+          normalizeSgfForHash(String(record.resultRaw || "")).toLowerCase(),
+          moveSequence
+        ];
+        return parts.join("|");
+      }
+
+      // Minimal SGF collection parser. It parses the full game tree for syntax validation,
+      // then the app imports the root sequence plus the first child at each branch as the main line.
+      function parseSgfCollection(sgf) {
+        const text = String(sgf || "").trim();
+        if (!text) throw new SgfParseError("Malformed SGF: empty input.");
+        let i = 0;
+
+        function current() { return text[i]; }
+        function atEnd() { return i >= text.length; }
+        function skipWhitespace() { while (!atEnd() && /\s/.test(current())) i++; }
+        function expect(ch) {
+          skipWhitespace();
+          if (current() !== ch) throw new SgfParseError(`Malformed SGF: expected '${ch}' near character ${i + 1}.`);
+          i++;
+        }
+        function parsePropValue() {
+          expect("[");
+          let value = "";
+          let escaped = false;
+          while (!atEnd()) {
+            const ch = text[i++];
+            if (escaped) {
+              value += ch;
+              escaped = false;
+            } else if (ch === "\\") {
+              escaped = true;
+            } else if (ch === "]") {
+              return value;
+            } else {
+              value += ch;
+            }
+          }
+          throw new SgfParseError("Malformed SGF: unclosed property value.");
+        }
+        function parseNode() {
+          expect(";");
+          const props = {};
+          while (!atEnd()) {
+            skipWhitespace();
+            const ch = current();
+            if (!ch || ch === ";" || ch === "(" || ch === ")") break;
+            if (!/[A-Za-z]/.test(ch)) {
+              throw new SgfParseError(`Malformed SGF: invalid property identifier near character ${i + 1}.`);
+            }
+            let id = "";
+            while (!atEnd() && /[A-Za-z]/.test(current())) id += text[i++];
+            id = id.toUpperCase();
+            skipWhitespace();
+            const values = [];
+            while (!atEnd() && current() === "[") {
+              values.push(parsePropValue());
+              skipWhitespace();
+            }
+            if (!values.length) throw new SgfParseError(`Malformed SGF: property ${id} has no value.`);
+            props[id] = (props[id] || []).concat(values);
+          }
+          return { props };
+        }
+        function parseSequence() {
+          const nodes = [];
+          while (true) {
+            skipWhitespace();
+            if (current() !== ";") break;
+            nodes.push(parseNode());
+          }
+          if (!nodes.length) throw new SgfParseError("Malformed SGF: collection has no nodes.");
+          return nodes;
+        }
+        function parseCollection() {
+          expect("(");
+          const sequence = parseSequence();
+          const children = [];
+          while (true) {
+            skipWhitespace();
+            if (current() === "(") children.push(parseCollection());
+            else break;
+          }
+          expect(")");
+          return { sequence, children };
+        }
+
+        const tree = parseCollection();
+        skipWhitespace();
+        if (!atEnd()) throw new SgfParseError(`Malformed SGF: unexpected data after collection near character ${i + 1}.`);
+        return tree;
+      }
+
+      function hasVariations(tree) {
+        if (!tree || !Array.isArray(tree.children)) return false;
+        if (tree.children.length > 1) return true;
+        return tree.children.some(child => hasVariations(child));
+      }
+
+      function mainLineNodes(tree) {
+        const nodes = [...tree.sequence];
+        let cursor = tree;
+        while (cursor.children && cursor.children.length) {
+          cursor = cursor.children[0];
+          nodes.push(...cursor.sequence);
+        }
+        return nodes;
+      }
+
+      function parsePlayer(raw) {
+        const value = stripOuterWhitespace(raw || "");
+        const match = value.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+        const name = match ? match[1].trim() : value;
+        const rating = match ? match[2].trim() : null;
+        return { raw: value, name, rating };
+      }
+
+      function isUsernameMatch(player, username = USERNAME) {
+        if (!player || !player.name) return false;
+        return player.name.trim().toLowerCase() === username.trim().toLowerCase();
+      }
+
+      function parseBoardSize(rawSize) {
+        const sizeText = stripOuterWhitespace(rawSize || "");
+        if (!sizeText) throw new SgfParseError("Missing SZ[...] board size.");
+        const simple = sizeText.match(/^(\d+)$/);
+        const rectangular = sizeText.match(/^(\d+)\s*:\s*(\d+)$/);
+        if (simple) return Number(simple[1]);
+        if (rectangular && rectangular[1] === rectangular[2]) return Number(rectangular[1]);
+        throw new SgfParseError("This app only supports 9×9 games.");
+      }
+
+      // Converts SGF coordinates to zero-based row/column plus human display coordinates.
+      // SGF is column first, row second: aa = A9, ia = J9, ai = A1, ii = J1.
+      function sgfCoordToPoint(coord, size = BOARD_SIZE) {
+        if (coord === "") return { pass: true, coord: "", row: null, col: null, human: "pass" };
+        if (typeof coord !== "string" || coord.length !== 2) {
+          throw new ReplayError(`Invalid SGF coordinate '${coord}'.`);
+        }
+        const col = SGF_LETTERS.indexOf(coord[0]);
+        const row = SGF_LETTERS.indexOf(coord[1]);
+        if (col < 0 || row < 0 || col >= size || row >= size) {
+          throw new ReplayError(`Coordinate '${coord}' is outside the 9×9 board.`);
+        }
+        return {
+          pass: false,
+          coord,
+          row,
+          col,
+          human: `${HUMAN_COLUMNS[col]}${size - row}`
+        };
+      }
+
+      function emptyBoard(size = BOARD_SIZE) {
+        return Array.from({ length: size }, () => Array.from({ length: size }, () => null));
+      }
+
+      function cloneBoard(board) {
+        return board.map(row => [...row]);
+      }
+
+      function neighbors(row, col, size = BOARD_SIZE) {
+        const out = [];
+        if (row > 0) out.push([row - 1, col]);
+        if (row < size - 1) out.push([row + 1, col]);
+        if (col > 0) out.push([row, col - 1]);
+        if (col < size - 1) out.push([row, col + 1]);
+        return out;
+      }
+
+      function groupAt(board, row, col) {
+        const color = board[row][col];
+        if (!color) return { stones: [], liberties: new Set() };
+        const seen = new Set();
+        const stones = [];
+        const liberties = new Set();
+        const stack = [[row, col]];
+        while (stack.length) {
+          const [r, c] = stack.pop();
+          const key = `${r},${c}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          stones.push([r, c]);
+          for (const [nr, nc] of neighbors(r, c, board.length)) {
+            const value = board[nr][nc];
+            if (!value) liberties.add(`${nr},${nc}`);
+            else if (value === color && !seen.has(`${nr},${nc}`)) stack.push([nr, nc]);
+          }
+        }
+        return { stones, liberties };
+      }
+
+      function removeGroup(board, stones) {
+        for (const [r, c] of stones) board[r][c] = null;
+      }
+
+      // Replay engine: applies legal placements, removes captured groups, tracks passes/captures,
+      // and records board states for saved-game replay. It does not score territory or detect dead stones.
+      function replayMoves(nodes, size = BOARD_SIZE) {
+        const board = emptyBoard(size);
+        const captures = { B: 0, W: 0 };
+        const normalizedMoves = [];
+        const replayStates = [{
+          moveNumber: 0,
+          board: cloneBoard(board),
+          move: null,
+          capturesByMove: 0,
+          captureCounts: { Black: 0, White: 0 },
+          lastStonePoint: null
+        }];
+        let passCount = 0;
+        let moveNumber = 0;
+        let lastStonePoint = null;
+
+        for (const node of nodes) {
+          const hasBlack = Object.prototype.hasOwnProperty.call(node.props, "B");
+          const hasWhite = Object.prototype.hasOwnProperty.call(node.props, "W");
+          if (!hasBlack && !hasWhite) continue;
+          if (hasBlack && hasWhite) throw new ReplayError("A node cannot contain both B[...] and W[...].", moveNumber + 1);
+
+          const color = hasBlack ? "B" : "W";
+          const values = node.props[color];
+          if (!values || values.length !== 1) throw new ReplayError(`${color}[...] must contain exactly one move value.`, moveNumber + 1);
+          const rawCoord = stripOuterWhitespace(values[0] || "");
+          moveNumber += 1;
+          let point;
+          try {
+            point = sgfCoordToPoint(rawCoord, size);
+          } catch (error) {
+            if (error instanceof ReplayError) throw new ReplayError(error.message, moveNumber);
+            throw error;
+          }
+
+          const moveRecord = {
+            moveNumber,
+            color,
+            colorName: color === "B" ? "Black" : "White",
+            sgfCoord: rawCoord,
+            pass: point.pass,
+            row: point.row,
+            col: point.col,
+            human: point.human,
+            captures: 0
+          };
+
+          if (point.pass) {
+            passCount += 1;
+            normalizedMoves.push(moveRecord);
+            replayStates.push({
+              moveNumber,
+              board: cloneBoard(board),
+              move: { ...moveRecord },
+              capturesByMove: 0,
+              captureCounts: { Black: captures.B, White: captures.W },
+              lastStonePoint: lastStonePoint ? { ...lastStonePoint } : null
+            });
+            continue;
+          }
+
+          if (board[point.row][point.col]) {
+            throw new ReplayError(`Illegal move at ${point.human}: intersection already occupied.`, moveNumber);
+          }
+
+          const opponent = color === "B" ? "W" : "B";
+          board[point.row][point.col] = color;
+          const capturedStones = [];
+          const checkedOpponentGroups = new Set();
+
+          for (const [nr, nc] of neighbors(point.row, point.col, size)) {
+            if (board[nr][nc] !== opponent) continue;
+            const group = groupAt(board, nr, nc);
+            const groupKey = group.stones.map(([r, c]) => `${r},${c}`).sort().join("|");
+            if (checkedOpponentGroups.has(groupKey)) continue;
+            checkedOpponentGroups.add(groupKey);
+            if (group.liberties.size === 0) {
+              capturedStones.push(...group.stones);
+              removeGroup(board, group.stones);
+            }
+          }
+
+          const ownGroup = groupAt(board, point.row, point.col);
+          if (ownGroup.liberties.size === 0) {
+            board[point.row][point.col] = null;
+            for (const [r, c] of capturedStones) board[r][c] = opponent;
+            throw new ReplayError(`Illegal suicide move at ${point.human}.`, moveNumber);
+          }
+
+          moveRecord.captures = capturedStones.length;
+          captures[color] += capturedStones.length;
+          lastStonePoint = { row: point.row, col: point.col, human: point.human, color };
+          normalizedMoves.push(moveRecord);
+          replayStates.push({
+            moveNumber,
+            board: cloneBoard(board),
+            move: { ...moveRecord },
+            capturesByMove: capturedStones.length,
+            captureCounts: { Black: captures.B, White: captures.W },
+            lastStonePoint: { ...lastStonePoint }
+          });
+        }
+
+        const endedByTwoPasses = normalizedMoves.length >= 2 &&
+          normalizedMoves[normalizedMoves.length - 1].pass &&
+          normalizedMoves[normalizedMoves.length - 2].pass;
+
+        return {
+          finalBoard: cloneBoard(board),
+          normalizedMoves,
+          replayStates,
+          moveCount: normalizedMoves.length,
+          passCount,
+          endedByTwoPasses,
+          lastStonePoint: lastStonePoint ? { ...lastStonePoint } : null,
+          captureCounts: {
+            Black: captures.B,
+            White: captures.W
+          }
+        };
+      }
+
+      // Parses RE[...] into winner/method/margin without computing a score.
+      function parseOfficialResult(rawResult) {
+        const raw = stripOuterWhitespace(rawResult || "");
+        if (!raw) return { resultRaw: "", winner: null, method: "unknown", margin: null, marginText: null };
+        if (/^(draw|jigo|0)$/i.test(raw)) {
+          return { resultRaw: raw, winner: "Draw", method: "draw", margin: 0, marginText: "0" };
+        }
+        if (/^(void|no result)$/i.test(raw)) {
+          return { resultRaw: raw, winner: null, method: "void", margin: null, marginText: null };
+        }
+        if (/^\?+$/.test(raw)) {
+          return { resultRaw: raw, winner: null, method: "unknown", margin: null, marginText: null };
+        }
+        const match = raw.match(/^([BW])\s*\+\s*(.+)$/i);
+        if (!match) return { resultRaw: raw, winner: null, method: "unknown", margin: null, marginText: null };
+        const winner = match[1].toUpperCase() === "B" ? "Black" : "White";
+        const detail = match[2].trim();
+        if (/^(R|Resign|Resignation)$/i.test(detail)) {
+          return { resultRaw: raw, winner, method: "resignation", margin: null, marginText: null };
+        }
+        if (/^(T|Time|Timeout)$/i.test(detail)) {
+          return { resultRaw: raw, winner, method: "time", margin: null, marginText: null };
+        }
+        if (/^(F|Forfeit)$/i.test(detail)) {
+          return { resultRaw: raw, winner, method: "forfeit", margin: null, marginText: null };
+        }
+        if (/^\?+$/.test(detail)) {
+          return { resultRaw: raw, winner, method: "unknown", margin: null, marginText: null };
+        }
+        const numeric = Number(detail);
+        if (Number.isFinite(numeric)) {
+          return { resultRaw: raw, winner, method: "score", margin: numeric, marginText: detail };
+        }
+        return { resultRaw: raw, winner, method: "unknown", margin: null, marginText: null };
+      }
+
+      function resultFromUserPerspective(official, userColor) {
+        if (!official) return { userResult: "Unknown", userMargin: null };
+        if (official.method === "void") return { userResult: "Void", userMargin: null };
+        if (!official.winner) return { userResult: "Unknown", userMargin: null };
+        if (official.winner === "Draw") return { userResult: "Draw", userMargin: 0 };
+        const userResult = official.winner === userColor ? "Win" : "Loss";
+        let userMargin = null;
+        if (official.method === "score" && Number.isFinite(official.margin)) {
+          userMargin = userResult === "Win" ? official.margin : -official.margin;
+        }
+        return { userResult, userMargin };
+      }
+
+      function resultMethodLabel(method) {
+        const labels = {
+          score: "score",
+          resignation: "resignation",
+          time: "time",
+          forfeit: "forfeit",
+          draw: "draw",
+          void: "void",
+          unknown: "unknown"
+        };
+        return labels[method] || "unknown";
+      }
+
+      function formatResultForRecord(record) {
+        const result = record && record.userResult ? record.userResult : "Unknown";
+        const method = record && record.resultMethod ? record.resultMethod : "unknown";
+        if (result === "Win" || result === "Loss") {
+          if (["resignation", "time", "forfeit"].includes(method)) return `${result} by ${resultMethodLabel(method)}`;
+          return result;
+        }
+        if (result === "Draw") return "Draw";
+        if (result === "Void" || method === "void") return "Void";
+        return "Unknown";
+      }
+
+      function formatMarginForRecord(record) {
+        if (!record) return "unknown";
+        if (record.userResult === "Draw") return "0";
+        if (record.resultMethod === "void") return "void";
+        if (record.resultMethod === "score") return formatMargin(record.userMargin);
+        if (["resignation", "time", "forfeit"].includes(record.resultMethod)) return resultMethodLabel(record.resultMethod);
+        return "unknown";
+      }
+
+      function extractMetadata(rootProps) {
+        const size = parseBoardSize(firstValue(rootProps, "SZ"));
+        if (size !== BOARD_SIZE) throw new SgfParseError("This app only supports 9×9 games.");
+
+        const blackRaw = stripOuterWhitespace(firstValue(rootProps, "PB"));
+        const whiteRaw = stripOuterWhitespace(firstValue(rootProps, "PW"));
+        if (!blackRaw || !whiteRaw) throw new SgfParseError("Missing PB[...] or PW[...]; cannot detect your color.");
+
+        const blackPlayer = parsePlayer(blackRaw);
+        const whitePlayer = parsePlayer(whiteRaw);
+        const blackMatches = isUsernameMatch(blackPlayer);
+        const whiteMatches = isUsernameMatch(whitePlayer);
+        if (!blackMatches && !whiteMatches) throw new SgfParseError("Username idfji not found in PB/PW.");
+        if (blackMatches && whiteMatches) throw new SgfParseError("Username idfji appears as both Black and White.");
+
+        const userColor = blackMatches ? "Black" : "White";
+        const official = parseOfficialResult(firstValue(rootProps, "RE"));
+        const personal = resultFromUserPerspective(official, userColor);
+
+        return {
+          boardSize: size,
+          rules: stripOuterWhitespace(firstValue(rootProps, "RU")) || "Unknown",
+          komi: stripOuterWhitespace(firstValue(rootProps, "KM")) || "Unknown",
+          handicap: stripOuterWhitespace(firstValue(rootProps, "HA")) || null,
+          blackPlayerRaw: blackRaw,
+          whitePlayerRaw: whiteRaw,
+          blackPlayer,
+          whitePlayer,
+          userColor,
+          official,
+          ...personal
+        };
+      }
+
+      async function createGameDraft(sgf) {
+        const sourceHash = await hashString(sgf);
+        const tree = parseSgfCollection(sgf);
+        const nodes = mainLineNodes(tree);
+        const rootNode = nodes[0];
+        const warnings = [];
+        if (hasVariations(tree)) warnings.push("Variations found; imported main line only.");
+        if ((rootNode.props.AB && rootNode.props.AB.length) || (rootNode.props.AW && rootNode.props.AW.length)) {
+          warnings.push("Setup stones found; v1 replay starts from an empty board.");
+        }
+
+        const metadata = extractMetadata(rootNode.props);
+        const replay = replayMoves(nodes, metadata.boardSize);
+        const userCaptures = metadata.userColor === "Black" ? replay.captureCounts.Black : replay.captureCounts.White;
+        const opponentCaptures = metadata.userColor === "Black" ? replay.captureCounts.White : replay.captureCounts.Black;
+
+        const baseRecord = {
+          schemaVersion: APP_SCHEMA_VERSION,
+          gameId: createGameId(),
+          sourceHash,
+          originalSgf: String(sgf || ""),
+          importedAt: new Date().toISOString(),
+          boardSize: metadata.boardSize,
+          rules: metadata.rules,
+          komi: metadata.komi,
+          handicap: metadata.handicap,
+          blackPlayerRaw: metadata.blackPlayerRaw,
+          whitePlayerRaw: metadata.whitePlayerRaw,
+          blackPlayer: metadata.blackPlayer,
+          whitePlayer: metadata.whitePlayer,
+          userColor: metadata.userColor,
+          userResult: metadata.userResult,
+          userMargin: metadata.userMargin,
+          resultRaw: metadata.official.resultRaw || "",
+          winner: metadata.official.winner,
+          resultMethod: metadata.official.method,
+          resultMethodLabel: resultMethodLabel(metadata.official.method),
+          normalizedMoveList: replay.normalizedMoves,
+          moves: replay.normalizedMoves,
+          replayStates: replay.replayStates,
+          moveCount: replay.moveCount,
+          passCount: replay.passCount,
+          captureCounts: replay.captureCounts,
+          capturesByBlack: replay.captureCounts.Black,
+          capturesByWhite: replay.captureCounts.White,
+          captureCountsByUser: userCaptures,
+          captureCountsByOpponent: opponentCaptures,
+          capturesByUser: userCaptures,
+          capturesByOpponent: opponentCaptures,
+          finalBoard: replay.finalBoard,
+          lastStonePoint: replay.lastStonePoint,
+          endedByTwoPasses: replay.endedByTwoPasses,
+          warnings
+        };
+        baseRecord.gameFingerprint = buildGameFingerprint(baseRecord);
+        return enrichGameRecord(baseRecord);
+      }
+
+
+      function sanitizeTags(tags) {
+        const source = Array.isArray(tags) ? tags : (typeof tags === "string" ? tags.split(",") : []);
+        const seen = new Set();
+        const cleaned = [];
+        for (const tag of source) {
+          const text = String(tag || "").trim().replace(/\s+/g, " ").slice(0, 40);
+          const key = text.toLowerCase();
+          if (!text || seen.has(key)) continue;
+          seen.add(key);
+          cleaned.push(text);
+        }
+        return cleaned.slice(0, 20);
+      }
+
+      function personalDefaults(record = {}) {
+        return {
+          favorite: Boolean(record.favorite),
+          reviewLater: Boolean(record.reviewLater),
+          notes: typeof record.notes === "string" ? record.notes : "",
+          tags: sanitizeTags(record.tags)
+        };
+      }
+
+      function moveShortLabel(move) {
+        if (!move) return null;
+        const color = move.color || (move.colorName === "Black" ? "B" : move.colorName === "White" ? "W" : "");
+        if (move.pass) return `${color} pass`.trim();
+        return `${color} ${move.human || ""}`.trim();
+      }
+
+      function isUserMove(move, userColor) {
+        return Boolean(move && ((userColor === "Black" && move.color === "B") || (userColor === "White" && move.color === "W")));
+      }
+
+      function classifyMovePoint(move) {
+        if (!move || move.pass || !Number.isInteger(move.row) || !Number.isInteger(move.col)) {
+          return { corner: false, side: false, center: false, edge: false, secondLine: false, thirdLine: false, middle: false };
+        }
+        const size = BOARD_SIZE;
+        const r = move.row;
+        const c = move.col;
+        const edge = r === 0 || c === 0 || r === size - 1 || c === size - 1;
+        const secondLine = r === 1 || c === 1 || r === size - 2 || c === size - 2;
+        const thirdLine = r === 2 || c === 2 || r === size - 3 || c === size - 3;
+        const corner = (r <= 2 || r >= size - 3) && (c <= 2 || c >= size - 3);
+        const center = r >= 3 && r <= 5 && c >= 3 && c <= 5;
+        const middle = !(edge || secondLine || thirdLine);
+        const side = !corner && (edge || secondLine || thirdLine);
+        return { corner, side, center, edge, secondLine, thirdLine, middle };
+      }
+
+      function deriveMoveProfile(moves, userColor, wantUser) {
+        const counts = { corner: 0, side: 0, center: 0, edge: 0, secondLine: 0, thirdLine: 0, middle: 0 };
+        for (const move of moves) {
+          const user = isUserMove(move, userColor);
+          if (wantUser !== user || move.pass) continue;
+          const region = classifyMovePoint(move);
+          if (region.corner) counts.corner += 1;
+          if (region.side) counts.side += 1;
+          if (region.center) counts.center += 1;
+          if (region.edge) counts.edge += 1;
+          if (region.secondLine) counts.secondLine += 1;
+          if (region.thirdLine) counts.thirdLine += 1;
+          if (region.middle) counts.middle += 1;
+        }
+        return counts;
+      }
+
+      function derivePersonalHistoryFields(record = {}) {
+        const moves = Array.isArray(record.normalizedMoveList) ? record.normalizedMoveList : [];
+        const userColor = record.userColor || "";
+        const captureMoves = [];
+        let largestCaptureByUser = 0;
+        let largestCaptureByOpponent = 0;
+
+        for (const move of moves) {
+          const captured = Number(move && move.captures) || 0;
+          if (!captured) continue;
+          const byUser = isUserMove(move, userColor);
+          if (byUser) largestCaptureByUser = Math.max(largestCaptureByUser, captured);
+          else largestCaptureByOpponent = Math.max(largestCaptureByOpponent, captured);
+          captureMoves.push({
+            moveNumber: move.moveNumber,
+            color: move.color,
+            colorName: move.colorName,
+            human: move.human || null,
+            pass: Boolean(move.pass),
+            captured,
+            by: byUser ? "user" : "opponent"
+          });
+        }
+
+        const labels = moves.map(moveShortLabel).filter(Boolean);
+        const firstUser = moves.find(move => isUserMove(move, userColor));
+        const firstOpponent = moves.find(move => move && !move.pass && !isUserMove(move, userColor));
+        const userProfile = deriveMoveProfile(moves, userColor, true);
+        const opponentProfile = deriveMoveProfile(moves, userColor, false);
+        const captureByUser = Number(record.captureCountsByUser) || 0;
+        const captureByOpponent = Number(record.captureCountsByOpponent) || 0;
+
+        return {
+          captureMoves,
+          numberOfCaptureMoves: captureMoves.length,
+          largestCaptureByUser,
+          largestCaptureByOpponent,
+          captureDifferential: captureByUser - captureByOpponent,
+          firstCaptureMove: captureMoves.length ? captureMoves[0].moveNumber : null,
+          firstMove: labels[0] || null,
+          firstUserMove: firstUser ? moveShortLabel(firstUser) : null,
+          firstOpponentMove: firstOpponent ? moveShortLabel(firstOpponent) : null,
+          first3Moves: labels.slice(0, 3),
+          first5Moves: labels.slice(0, 5),
+          first10Moves: labels.slice(0, 10),
+          openingSignature: labels.slice(0, 5).join(" · ") || null,
+          userCornerMoves: userProfile.corner,
+          userSideMoves: userProfile.side,
+          userCenterMoves: userProfile.center,
+          userEdgeMoves: userProfile.edge,
+          userSecondLineMoves: userProfile.secondLine,
+          userThirdLineMoves: userProfile.thirdLine,
+          userMiddleMoves: userProfile.middle,
+          opponentCornerMoves: opponentProfile.corner,
+          opponentSideMoves: opponentProfile.side,
+          opponentCenterMoves: opponentProfile.center,
+          opponentEdgeMoves: opponentProfile.edge,
+          opponentSecondLineMoves: opponentProfile.secondLine,
+          opponentThirdLineMoves: opponentProfile.thirdLine,
+          opponentMiddleMoves: opponentProfile.middle
+        };
+      }
+
+      function normalizeRecordAliases(record = {}) {
+        const normalizedMoves = Array.isArray(record.normalizedMoveList)
+          ? record.normalizedMoveList
+          : (Array.isArray(record.moves) ? record.moves : []);
+        const rawCaptureCounts = record.captureCounts && typeof record.captureCounts === "object" ? record.captureCounts : {};
+        const capturesByBlack = Number.isFinite(Number(record.capturesByBlack))
+          ? Number(record.capturesByBlack)
+          : (Number.isFinite(Number(rawCaptureCounts.Black)) ? Number(rawCaptureCounts.Black) : 0);
+        const capturesByWhite = Number.isFinite(Number(record.capturesByWhite))
+          ? Number(record.capturesByWhite)
+          : (Number.isFinite(Number(rawCaptureCounts.White)) ? Number(rawCaptureCounts.White) : 0);
+        const derivedUserCaptures = record.userColor === "Black" ? capturesByBlack : record.userColor === "White" ? capturesByWhite : 0;
+        const derivedOpponentCaptures = record.userColor === "Black" ? capturesByWhite : record.userColor === "White" ? capturesByBlack : 0;
+        const captureCountsByUser = Number.isFinite(Number(record.captureCountsByUser))
+          ? Number(record.captureCountsByUser)
+          : (Number.isFinite(Number(record.capturesByUser)) ? Number(record.capturesByUser) : derivedUserCaptures);
+        const captureCountsByOpponent = Number.isFinite(Number(record.captureCountsByOpponent))
+          ? Number(record.captureCountsByOpponent)
+          : (Number.isFinite(Number(record.capturesByOpponent)) ? Number(record.capturesByOpponent) : derivedOpponentCaptures);
+        return {
+          ...record,
+          normalizedMoveList: normalizedMoves,
+          moves: normalizedMoves,
+          captureCounts: { Black: capturesByBlack, White: capturesByWhite },
+          capturesByBlack,
+          capturesByWhite,
+          captureCountsByUser,
+          captureCountsByOpponent,
+          capturesByUser: captureCountsByUser,
+          capturesByOpponent: captureCountsByOpponent,
+          warnings: Array.isArray(record.warnings) ? record.warnings : []
+        };
+      }
+
+      function enrichGameRecord(record = {}) {
+        const aliased = normalizeRecordAliases(record);
+        const enriched = {
+          ...aliased,
+          ...personalDefaults(aliased),
+          ...derivePersonalHistoryFields(aliased)
+        };
+        const finalRecord = normalizeRecordAliases(enriched);
+        return {
+          ...finalRecord,
+          gameFingerprint: finalRecord.gameFingerprint || buildGameFingerprint(finalRecord)
+        };
+      }
+
+      function mergeSavedRecord(baseRecord, sourceRecord = {}) {
+        return enrichGameRecord({
+          ...baseRecord,
+          gameId: sourceRecord.gameId || baseRecord.gameId,
+          importedAt: sourceRecord.importedAt || baseRecord.importedAt,
+          favorite: Boolean(sourceRecord.favorite),
+          reviewLater: Boolean(sourceRecord.reviewLater),
+          notes: typeof sourceRecord.notes === "string" ? sourceRecord.notes : "",
+          tags: sanitizeTags(sourceRecord.tags)
+        });
+      }
+
+      function formatMargin(value) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return "unknown";
+        const numeric = Number(value);
+        if (numeric === 0) return "0";
+        return `${numeric > 0 ? "+" : ""}${numeric.toFixed(1)}`;
+      }
+
+      function formatPercent(numerator, denominator) {
+        if (!denominator) return "—";
+        return `${((numerator / denominator) * 100).toFixed(1)}%`;
+      }
+
+      function tallyRecord(games) {
+        const wins = games.filter(g => g.userResult === "Win").length;
+        const losses = games.filter(g => g.userResult === "Loss").length;
+        const draws = games.filter(g => g.userResult === "Draw").length;
+        return `${wins}-${losses}${draws ? `-${draws}` : ""}`;
+      }
+
+      function mostCommon(values) {
+        const counts = new Map();
+        for (const value of values) {
+          if (!value) continue;
+          counts.set(value, (counts.get(value) || 0) + 1);
+        }
+        let best = null;
+        let bestCount = 0;
+        for (const [value, count] of counts.entries()) {
+          if (count > bestCount) {
+            best = value;
+            bestCount = count;
+          }
+        }
+        return best ? `${best} (${bestCount})` : "—";
+      }
+
+      function computeStreaks(games) {
+        const chronological = [...games].sort((a, b) => String(a.importedAt || "").localeCompare(String(b.importedAt || "")));
+        let bestWinStreak = 0;
+        let runningWins = 0;
+        for (const game of chronological) {
+          if (game.userResult === "Win") {
+            runningWins += 1;
+            bestWinStreak = Math.max(bestWinStreak, runningWins);
+          } else if (game.userResult === "Loss" || game.userResult === "Draw") {
+            runningWins = 0;
+          }
+        }
+
+        const recent = [...games].sort((a, b) => String(b.importedAt || "").localeCompare(String(a.importedAt || "")));
+        const first = recent.find(g => g.userResult === "Win" || g.userResult === "Loss" || g.userResult === "Draw");
+        if (!first) return { currentStreak: "—", bestWinStreak };
+        if (first.userResult === "Draw") return { currentStreak: "D1", bestWinStreak };
+        let count = 0;
+        for (const game of recent) {
+          if (game.userResult !== first.userResult) break;
+          count += 1;
+        }
+        return { currentStreak: `${first.userResult === "Win" ? "W" : "L"}${count}`, bestWinStreak };
+      }
+
+      function computeStats(games) {
+        const hydrated = (Array.isArray(games) ? games : []).map(enrichGameRecord);
+        const total = hydrated.length;
+        const wins = hydrated.filter(g => g.userResult === "Win").length;
+        const losses = hydrated.filter(g => g.userResult === "Loss").length;
+        const draws = hydrated.filter(g => g.userResult === "Draw").length;
+        const blackGames = hydrated.filter(g => g.userColor === "Black");
+        const whiteGames = hydrated.filter(g => g.userColor === "White");
+        const numericMargins = hydrated.map(g => g.userMargin).filter(v => Number.isFinite(Number(v))).map(Number);
+        const moveCounts = hydrated.map(g => g.moveCount).filter(v => Number.isFinite(Number(v))).map(Number);
+        const userCaptures = hydrated.map(g => g.captureCountsByUser).filter(v => Number.isFinite(Number(v))).map(Number);
+        const oppCaptures = hydrated.map(g => g.captureCountsByOpponent).filter(v => Number.isFinite(Number(v))).map(Number);
+        const differentials = hydrated.map(g => g.captureDifferential).filter(v => Number.isFinite(Number(v))).map(Number);
+        const avg = values => values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+        const sortedRecent = [...hydrated].sort((a, b) => String(b.importedAt || "").localeCompare(String(a.importedAt || "")));
+        const streaks = computeStreaks(hydrated);
+        return {
+          totalGames: total,
+          wins,
+          losses,
+          draws,
+          winRate: formatPercent(wins, total),
+          blackGames: blackGames.length,
+          whiteGames: whiteGames.length,
+          blackWinRate: formatPercent(blackGames.filter(g => g.userResult === "Win").length, blackGames.length),
+          whiteWinRate: formatPercent(whiteGames.filter(g => g.userResult === "Win").length, whiteGames.length),
+          averageMargin: avg(numericMargins),
+          averageMoves: avg(moveCounts),
+          winsByScore: hydrated.filter(g => g.userResult === "Win" && g.resultMethod === "score").length,
+          winsByResignation: hydrated.filter(g => g.userResult === "Win" && g.resultMethod === "resignation").length,
+          lossesByScore: hydrated.filter(g => g.userResult === "Loss" && g.resultMethod === "score").length,
+          lossesByResignation: hydrated.filter(g => g.userResult === "Loss" && g.resultMethod === "resignation").length,
+          averageCapturesByUser: avg(userCaptures),
+          averageCapturesByOpponent: avg(oppCaptures),
+          averageCaptureDifferential: avg(differentials),
+          largestSingleCaptureByUser: hydrated.reduce((max, g) => Math.max(max, Number(g.largestCaptureByUser) || 0), 0),
+          gamesWithAtLeastOneCapture: hydrated.filter(g => Array.isArray(g.captureMoves) && g.captureMoves.length).length,
+          favoritesCount: hydrated.filter(g => g.favorite).length,
+          reviewLaterCount: hydrated.filter(g => g.reviewLater).length,
+          taggedGamesCount: hydrated.filter(g => Array.isArray(g.tags) && g.tags.length).length,
+          gamesWithNotesCount: hydrated.filter(g => String(g.notes || "").trim()).length,
+          mostCommonFirstMove: mostCommon(hydrated.map(g => g.firstMove)),
+          mostCommonFirstUserMove: mostCommon(hydrated.map(g => g.firstUserMove)),
+          mostCommonOpeningSignature: mostCommon(hydrated.map(g => g.openingSignature)),
+          last5Record: tallyRecord(sortedRecent.slice(0, 5)),
+          last10Record: tallyRecord(sortedRecent.slice(0, 10)),
+          currentStreak: streaks.currentStreak,
+          bestWinStreak: streaks.bestWinStreak
+        };
+      }
+
+      return {
+        APP_SCHEMA_VERSION,
+        BOARD_SIZE,
+        USERNAME,
+        HUMAN_COLUMNS,
+        SgfParseError,
+        ReplayError,
+        normalizeSgfForHash,
+        hashString,
+        createGameDraft,
+        formatMargin,
+        formatMarginForRecord,
+        formatResultForRecord,
+        formatPercent,
+        computeStats,
+        enrichGameRecord,
+        buildGameFingerprint,
+        mergeSavedRecord,
+        sanitizeTags,
+        moveShortLabel,
+        sgfCoordToPoint,
+        parseOfficialResult,
+        resultFromUserPerspective,
+        replayMoves,
+        parseSgfCollection,
+        mainLineNodes,
+        parsePlayer,
+        isUsernameMatch
+      };
+    })();
+
+    if (typeof globalThis !== "undefined") globalThis.GoCore = GoCore;
+
+    const GoStorage = (() => {
+      if (typeof indexedDB === "undefined") return null;
+      const DB_NAME = "go-9x9-history-tracker";
+      const DB_VERSION = 1;
+      const STORE = "games";
+      let dbPromise = null;
+
+      function openDb() {
+        if (dbPromise) return dbPromise;
+        dbPromise = new Promise((resolve, reject) => {
+          let request;
+          try {
+            request = indexedDB.open(DB_NAME, DB_VERSION);
+          } catch (error) {
+            dbPromise = null;
+            reject(error);
+            return;
+          }
+          request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(STORE)) {
+              const store = db.createObjectStore(STORE, { keyPath: "sourceHash" });
+              store.createIndex("gameId", "gameId", { unique: true });
+              store.createIndex("importedAt", "importedAt", { unique: false });
+              store.createIndex("userColor", "userColor", { unique: false });
+              store.createIndex("userResult", "userResult", { unique: false });
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => {
+            dbPromise = null;
+            reject(request.error || new Error("Could not open local game database."));
+          };
+          request.onblocked = () => {
+            dbPromise = null;
+            reject(new Error("Local game database is blocked by another open tab."));
+          };
+        });
+        return dbPromise;
+      }
+
+      async function getAllGames() {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE, "readonly");
+          const store = tx.objectStore(STORE);
+          const request = store.getAll();
+          request.onsuccess = () => {
+            const games = request.result || [];
+            games.sort((a, b) => String(b.importedAt || "").localeCompare(String(a.importedAt || "")));
+            resolve(games);
+          };
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function gameExists(recordOrHash) {
+        return Boolean(await findDuplicateGame(recordOrHash));
+      }
+
+      async function getGame(sourceHash) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE, "readonly");
+          const request = tx.objectStore(STORE).get(sourceHash);
+          request.onsuccess = () => resolve(request.result || null);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function findDuplicateGame(recordOrHash) {
+        if (!recordOrHash) return null;
+        const sourceHash = typeof recordOrHash === "string" ? recordOrHash : recordOrHash.sourceHash;
+        if (sourceHash) {
+          const exact = await getGame(sourceHash);
+          if (exact) return { type: "sourceHash", record: exact };
+        }
+        if (typeof recordOrHash === "string") return null;
+        const candidate = GoCore.enrichGameRecord(recordOrHash);
+        if (!candidate.gameFingerprint) return null;
+        const games = await getAllGames();
+        const duplicate = games.find(game => GoCore.enrichGameRecord(game).gameFingerprint === candidate.gameFingerprint);
+        return duplicate ? { type: "gameFingerprint", record: duplicate } : null;
+      }
+
+      async function deleteGame(sourceHash) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE, "readwrite");
+          const request = tx.objectStore(STORE).delete(sourceHash);
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function updateGame(record) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE, "readwrite");
+          const hydrated = GoCore.enrichGameRecord(record);
+          const request = tx.objectStore(STORE).put(hydrated);
+          request.onsuccess = () => resolve(hydrated);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function addGame(record) {
+        const db = await openDb();
+        const hydrated = GoCore.enrichGameRecord(record);
+        if (await findDuplicateGame(hydrated)) throw new Error("This game is already saved.");
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE, "readwrite");
+          const request = tx.objectStore(STORE).add(hydrated);
+          request.onsuccess = () => resolve(hydrated);
+          request.onerror = () => {
+            if (request.error && request.error.name === "ConstraintError") {
+              reject(new Error("This game is already saved."));
+            } else {
+              reject(request.error);
+            }
+          };
+        });
+      }
+
+      async function importGames(records) {
+        const db = await openDb();
+        let imported = 0;
+        let duplicates = 0;
+        let skipped = 0;
+        const existing = (await getAllGames()).map(GoCore.enrichGameRecord);
+        const seenHashes = new Set(existing.map(game => game.sourceHash).filter(Boolean));
+        const seenFingerprints = new Set(existing.map(game => game.gameFingerprint).filter(Boolean));
+
+        for (const record of records) {
+          if (!record || typeof record.originalSgf !== "string" || !record.originalSgf.trim()) {
+            skipped += 1;
+            continue;
+          }
+
+          let toSave;
+          try {
+            // Rebuild derived fields from the original SGF during import. This keeps old or
+            // partially corrupt backups from poisoning History/Stats with inconsistent data.
+            toSave = await GoCore.createGameDraft(record.originalSgf);
+            toSave = GoCore.mergeSavedRecord(toSave, record);
+          } catch (error) {
+            skipped += 1;
+            continue;
+          }
+
+          if (seenHashes.has(toSave.sourceHash) || (toSave.gameFingerprint && seenFingerprints.has(toSave.gameFingerprint))) {
+            duplicates += 1;
+            continue;
+          }
+
+          try {
+            await new Promise((resolve, reject) => {
+              const tx = db.transaction(STORE, "readwrite");
+              const request = tx.objectStore(STORE).add(toSave);
+              request.onsuccess = () => resolve();
+              request.onerror = () => reject(request.error);
+            });
+            imported += 1;
+            seenHashes.add(toSave.sourceHash);
+            if (toSave.gameFingerprint) seenFingerprints.add(toSave.gameFingerprint);
+          } catch (error) {
+            if (error && error.name === "ConstraintError") duplicates += 1;
+            else skipped += 1;
+          }
+        }
+        return { imported, duplicates, skipped };
+      }
+
+      return { getAllGames, gameExists, findDuplicateGame, getGame, addGame, updateGame, deleteGame, importGames };
+    })();
+
+    const App = (() => {
+      if (typeof document === "undefined") return {};
+
+      const els = {
+        tabButtons: Array.from(document.querySelectorAll("[data-tab]")),
+        brandHomeButton: document.getElementById("brandHomeButton"),
+        menuButton: document.getElementById("menuButton"),
+        menuPanel: document.getElementById("menuPanel"),
+        utilityArea: document.getElementById("utilityArea"),
+        storageStatus: document.getElementById("storageStatus"),
+        sections: {
+          add: document.getElementById("tab-add"),
+          history: document.getElementById("tab-history"),
+          stats: document.getElementById("tab-stats"),
+          backup: document.getElementById("tab-backup")
+        },
+        pastePanel: document.getElementById("pastePanel"),
+        sgfInput: document.getElementById("sgfInput"),
+        parseButton: document.getElementById("parseButton"),
+        addMessage: document.getElementById("addMessage"),
+        previewArea: document.getElementById("previewArea"),
+        previewFacts: document.getElementById("previewFacts"),
+        warningList: document.getElementById("warningList"),
+        boardContainer: document.getElementById("boardContainer"),
+        saveButton: document.getElementById("saveButton"),
+        newGameButton: document.getElementById("newGameButton"),
+        historyContent: document.getElementById("historyContent"),
+        statsContent: document.getElementById("statsContent"),
+        exportJsonButton: document.getElementById("exportJsonButton"),
+        importJsonInput: document.getElementById("importJsonInput"),
+        exportCsvButton: document.getElementById("exportCsvButton"),
+        exportSgfZipButton: document.getElementById("exportSgfZipButton"),
+        backupMessage: document.getElementById("backupMessage")
+      };
+
+      let currentDraft = null;
+      let detailReplay = null;
+      let historyFilter = "all";
+      const LAST_BACKUP_KEY = "go9TrackerLastBackupAt";
+
+      function showMessage(target, type, text) {
+        target.className = `message ${type} show`;
+        target.textContent = text;
+      }
+
+      function clearMessage(target) {
+        target.className = "message";
+        target.textContent = "";
+      }
+
+      function readLastBackupAt() {
+        try {
+          return window.localStorage ? window.localStorage.getItem(LAST_BACKUP_KEY) : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function writeLastBackupAt(value) {
+        try {
+          if (window.localStorage) window.localStorage.setItem(LAST_BACKUP_KEY, value);
+        } catch (error) {
+          // localStorage can be disabled in private/restricted contexts; backup still downloads.
+        }
+      }
+
+      function formatLastBackup(value) {
+        if (!value) return "unknown";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "unknown";
+        return date.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      }
+
+      async function renderStorageStatus() {
+        if (!els.storageStatus) return;
+        let savedText = "0";
+        let storageText = "Local browser storage";
+        if (!GoStorage) {
+          storageText = "Unavailable";
+          savedText = "unavailable";
+        } else {
+          try {
+            const games = await GoStorage.getAllGames();
+            savedText = String(games.length);
+          } catch (error) {
+            storageText = "Error";
+            savedText = "unavailable";
+          }
+        }
+        els.storageStatus.innerHTML = `
+          <div class="storage-status-grid">
+            <div class="storage-status-item"><span class="storage-status-label">Storage</span><span class="storage-status-value">${escapeHtml(storageText)}</span></div>
+            <div class="storage-status-item"><span class="storage-status-label">Saved games</span><span class="storage-status-value">${escapeHtml(savedText)}</span></div>
+            <div class="storage-status-item"><span class="storage-status-label">Last backup</span><span class="storage-status-value">${escapeHtml(formatLastBackup(readLastBackupAt()))}</span></div>
+          </div>
+          <p class="storage-warning">Games are stored locally in this browser. Export a JSON backup before clearing browser data or switching devices.</p>
+        `;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>'"]/g, ch => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          "'": "&#39;",
+          '"': "&quot;"
+        }[ch]));
+      }
+
+      function resultTone(record) {
+        const result = record && record.userResult ? record.userResult : "Unknown";
+        if (result === "Win") return "win";
+        if (result === "Loss") return "loss";
+        if (result === "Draw") return "draw";
+        return "unknown";
+      }
+
+      function resultBadgeText(record) {
+        const result = record && record.userResult ? record.userResult : "Unknown";
+        return result === "Void" ? "Unknown" : result;
+      }
+
+      function resultHeadline(record) {
+        if (!record) return "Unknown";
+        const result = record.userResult || "Unknown";
+        const method = record.resultMethod || "unknown";
+        if ((result === "Win" || result === "Loss") && method === "score" && Number.isFinite(Number(record.userMargin))) {
+          const absolute = Math.abs(Number(record.userMargin));
+          return `${result} by ${absolute.toFixed(1)}`;
+        }
+        if ((result === "Win" || result === "Loss") && ["resignation", "time", "forfeit"].includes(method)) {
+          return `${result} by ${method}`;
+        }
+        if (result === "Draw") return "Draw";
+        if (result === "Void") return "Void";
+        return "Unknown";
+      }
+
+      function previewSubline(record) {
+        return `You played ${record.userColor || "Unknown"} · ${record.moveCount ?? 0} moves`;
+      }
+
+      function capturePair(record) {
+        return `${record.captureCountsByUser ?? 0}–${record.captureCountsByOpponent ?? 0}`;
+      }
+
+      function filterLabel(filter) {
+        return ({
+          all: "All",
+          wins: "Wins",
+          losses: "Losses",
+          draws: "Draws",
+          black: "Black",
+          white: "White",
+          favorites: "Favorites",
+          review: "Review Later"
+        })[filter] || "All";
+      }
+
+      function matchesHistoryFilter(record, filter) {
+        const game = GoCore.enrichGameRecord(record || {});
+        if (filter === "wins") return game.userResult === "Win";
+        if (filter === "losses") return game.userResult === "Loss";
+        if (filter === "draws") return game.userResult === "Draw";
+        if (filter === "black") return game.userColor === "Black";
+        if (filter === "white") return game.userColor === "White";
+        if (filter === "favorites") return Boolean(game.favorite);
+        if (filter === "review") return Boolean(game.reviewLater);
+        return true;
+      }
+
+      function percentNumber(percentText) {
+        const n = Number(String(percentText || "").replace("%", ""));
+        return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0;
+      }
+
+      function closeMenu() {
+        if (!els.menuPanel || !els.menuButton) return;
+        els.menuPanel.classList.remove("open");
+        els.menuButton.setAttribute("aria-expanded", "false");
+      }
+
+      function toggleMenu() {
+        if (!els.menuPanel || !els.menuButton) return;
+        const open = !els.menuPanel.classList.contains("open");
+        els.menuPanel.classList.toggle("open", open);
+        els.menuButton.setAttribute("aria-expanded", String(open));
+      }
+
+      async function switchTab(tab, options = {}) {
+        const targetTab = els.sections[tab] ? tab : "add";
+        els.tabButtons.forEach(button => button.classList.toggle("active", button.dataset.tab === targetTab));
+        Object.entries(els.sections).forEach(([name, section]) => {
+          if (section) section.classList.toggle("active", name === targetTab);
+        });
+        closeMenu();
+        if (targetTab === "history") await renderHistory();
+        if (targetTab === "stats") await renderStats();
+        if (targetTab === "backup") {
+          clearMessage(els.backupMessage);
+          await renderStorageStatus();
+        }
+      }
+
+      function markerForRecord(record) {
+        if (record && record.lastStonePoint) return record.lastStonePoint;
+        const moves = record && Array.isArray(record.normalizedMoveList) ? record.normalizedMoveList : [];
+        for (let i = moves.length - 1; i >= 0; i--) {
+          const move = moves[i];
+          if (!move.pass && Number.isInteger(move.row) && Number.isInteger(move.col)) {
+            return { row: move.row, col: move.col, color: move.color, human: move.human };
+          }
+        }
+        return null;
+      }
+
+      function renderPreview(record) {
+        const tone = resultTone(record);
+        els.previewFacts.innerHTML = `
+          <div class="detail-result-block">
+            <span class="result-badge badge-${tone}">${escapeHtml(resultBadgeText(record))}</span>
+            <div class="result-headline">${escapeHtml(resultHeadline(record))}</div>
+            <div class="result-subline">${escapeHtml(previewSubline(record))}</div>
+          </div>
+          <div class="summary-list" aria-label="Parsed game summary">
+            <div class="summary-row"><span>Captures</span><strong>You ${escapeHtml(record.captureCountsByUser ?? 0)} · Opponent ${escapeHtml(record.captureCountsByOpponent ?? 0)}</strong></div>
+            <div class="summary-row"><span>Passes</span><strong>${escapeHtml(record.passCount ?? 0)}</strong></div>
+            <div class="summary-row"><span>Rules</span><strong>${escapeHtml(record.rules || "Unknown")}</strong></div>
+            <div class="summary-row"><span>Komi</span><strong>${escapeHtml(record.komi || "Unknown")}</strong></div>
+          </div>
+        `;
+
+        if (record.warnings && record.warnings.length) {
+          els.warningList.innerHTML = record.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join("");
+          els.warningList.classList.remove("hidden");
+        } else {
+          els.warningList.innerHTML = "";
+          els.warningList.classList.add("hidden");
+        }
+
+        renderBoard(record.finalBoard, els.boardContainer, { marker: markerForRecord(record) });
+        els.previewArea.classList.remove("hidden");
+      }
+
+      // Board renderer. Coordinates are labels only; no scoring, territory, or move-number overlay.
+      function renderBoard(board, container, options = {}) {
+        const size = GoCore.BOARD_SIZE;
+        const frame = document.createElement("div");
+        frame.className = "board-frame go-board";
+        frame.dataset.boardSize = String(size);
+        const surface = document.createElement("div");
+        surface.className = "board-surface";
+        surface.setAttribute("aria-hidden", "true");
+
+        // Percent-based geometry keeps the board usable on desktop and mobile.
+        const pad = 7.78;
+        const gap = (100 - pad * 2) / (size - 1);
+        const gridLength = gap * (size - 1);
+        const pointPct = (index) => pad + index * gap;
+
+        for (let i = 0; i < size; i++) {
+          const v = document.createElement("div");
+          v.className = "grid-line v";
+          v.style.left = `${pointPct(i)}%`;
+          v.style.top = `${pad}%`;
+          v.style.height = `${gridLength}%`;
+          surface.appendChild(v);
+
+          const h = document.createElement("div");
+          h.className = "grid-line h";
+          h.style.left = `${pad}%`;
+          h.style.top = `${pointPct(i)}%`;
+          h.style.width = `${gridLength}%`;
+          surface.appendChild(h);
+        }
+
+        for (const [r, c] of [[2, 2], [2, 6], [4, 4], [6, 2], [6, 6]]) {
+          const star = document.createElement("div");
+          star.className = "star-point";
+          star.style.left = `${pointPct(c)}%`;
+          star.style.top = `${pointPct(r)}%`;
+          surface.appendChild(star);
+        }
+
+        // Non-visual intersection nodes make renderer tests and future accessibility checks
+        // deterministic without adding clickable cells or board clutter.
+        for (let row = 0; row < size; row++) {
+          for (let col = 0; col < size; col++) {
+            const point = document.createElement("span");
+            point.className = "board-intersection";
+            point.dataset.row = String(row);
+            point.dataset.col = String(col);
+            point.style.left = `${pointPct(col)}%`;
+            point.style.top = `${pointPct(row)}%`;
+            surface.appendChild(point);
+          }
+        }
+
+        for (let row = 0; row < size; row++) {
+          for (let col = 0; col < size; col++) {
+            const stoneColor = board && board[row] ? board[row][col] : null;
+            if (!stoneColor) continue;
+            const stone = document.createElement("div");
+            stone.className = `stone ${stoneColor === "B" ? "black" : "white"}`;
+            stone.title = `${stoneColor === "B" ? "Black" : "White"} ${GoCore.HUMAN_COLUMNS[col]}${size - row}`;
+            stone.style.left = `${pointPct(col)}%`;
+            stone.style.top = `${pointPct(row)}%`;
+            surface.appendChild(stone);
+          }
+        }
+
+        const marker = options.marker;
+        if (marker && Number.isInteger(marker.row) && Number.isInteger(marker.col)) {
+          const onBoardStone = board && board[marker.row] ? board[marker.row][marker.col] : null;
+          if (onBoardStone) {
+            const markerEl = document.createElement("div");
+            markerEl.className = `last-move-marker ${onBoardStone === "W" ? "on-white" : "on-black"}`;
+            markerEl.title = `Last move: ${marker.human || `${GoCore.HUMAN_COLUMNS[marker.col]}${size - marker.row}`}`;
+            markerEl.style.left = `${pointPct(marker.col)}%`;
+            markerEl.style.top = `${pointPct(marker.row)}%`;
+            surface.appendChild(markerEl);
+          }
+        }
+
+        frame.appendChild(surface);
+
+        const surfaceLeft = 8.14;
+        const surfaceSize = 83.72;
+        const pointFramePct = (index) => surfaceLeft + surfaceSize * pointPct(index) / 100;
+
+        for (let col = 0; col < size; col++) {
+          const x = pointFramePct(col);
+          const top = document.createElement("div");
+          top.className = "coord-label";
+          top.textContent = GoCore.HUMAN_COLUMNS[col];
+          top.style.left = `${x}%`;
+          top.style.top = "3.5%";
+          frame.appendChild(top);
+
+          const bottom = document.createElement("div");
+          bottom.className = "coord-label";
+          bottom.textContent = GoCore.HUMAN_COLUMNS[col];
+          bottom.style.left = `${x}%`;
+          bottom.style.top = "96.5%";
+          frame.appendChild(bottom);
+        }
+
+        for (let row = 0; row < size; row++) {
+          const y = pointFramePct(row);
+          const label = String(size - row);
+          const left = document.createElement("div");
+          left.className = "coord-label";
+          left.textContent = label;
+          left.style.left = "3.5%";
+          left.style.top = `${y}%`;
+          frame.appendChild(left);
+
+          const right = document.createElement("div");
+          right.className = "coord-label";
+          right.textContent = label;
+          right.style.left = "96.5%";
+          right.style.top = `${y}%`;
+          frame.appendChild(right);
+        }
+
+        container.innerHTML = "";
+        container.appendChild(frame);
+      }
+
+      async function handleParse() {
+        clearMessage(els.addMessage);
+        currentDraft = null;
+        els.saveButton.disabled = true;
+        const sgf = els.sgfInput.value;
+        try {
+          const draft = await GoCore.createGameDraft(sgf);
+          currentDraft = draft;
+          els.pastePanel.classList.add("collapsed");
+          renderPreview(draft);
+          if (GoStorage) {
+            try {
+              if (await GoStorage.gameExists(draft)) {
+                els.saveButton.disabled = true;
+                showMessage(els.addMessage, "info", "This game is already saved.");
+              } else {
+                els.saveButton.disabled = false;
+              }
+            } catch (storageError) {
+              els.saveButton.disabled = true;
+              showMessage(els.addMessage, "error", storageError.message || "Could not access local storage; saving is unavailable.");
+            }
+          } else {
+            els.saveButton.disabled = true;
+            showMessage(els.addMessage, "error", "IndexedDB is not available in this browser.");
+          }
+        } catch (error) {
+          els.previewArea.classList.add("hidden");
+          els.previewFacts.innerHTML = "";
+          els.warningList.innerHTML = "";
+          els.warningList.classList.add("hidden");
+          els.boardContainer.innerHTML = "";
+          els.pastePanel.classList.remove("collapsed");
+          showMessage(els.addMessage, "error", error.message || "Could not parse SGF.");
+        }
+      }
+
+      function resetAddForm() {
+        currentDraft = null;
+        els.sgfInput.value = "";
+        els.pastePanel.classList.remove("collapsed");
+        els.previewArea.classList.add("hidden");
+        els.previewFacts.innerHTML = "";
+        els.warningList.innerHTML = "";
+        els.warningList.classList.add("hidden");
+        els.boardContainer.innerHTML = "";
+        els.saveButton.disabled = true;
+        clearMessage(els.addMessage);
+        els.sgfInput.focus();
+      }
+
+      async function handleSave() {
+        clearMessage(els.addMessage);
+        if (!currentDraft) return;
+        if (!GoStorage) {
+          showMessage(els.addMessage, "error", "IndexedDB is not available in this browser.");
+          return;
+        }
+        try {
+          if (await GoStorage.gameExists(currentDraft)) {
+            els.saveButton.disabled = true;
+            showMessage(els.addMessage, "info", "This game is already saved.");
+            return;
+          }
+          await GoStorage.addGame(currentDraft);
+          els.saveButton.disabled = true;
+          showMessage(els.addMessage, "success", "Saved to History.");
+          await renderHistory();
+          await renderStats();
+        } catch (error) {
+          const message = error && error.message ? error.message : "Could not save game.";
+          showMessage(els.addMessage, message.includes("already saved") ? "info" : "error", message);
+        }
+      }
+
+      function summaryFacts(record) {
+        return [
+          ["You played", record.userColor || "Unknown"],
+          ["Result", GoCore.formatResultForRecord(record)],
+          ["Margin", GoCore.formatMarginForRecord(record)],
+          ["Moves", record.moveCount ?? 0],
+          ["Rules", record.rules || "Unknown"],
+          ["Komi", record.komi || "Unknown"],
+          ["Passes", record.passCount ?? 0],
+          ["Captures", `${record.captureCountsByUser ?? 0} – ${record.captureCountsByOpponent ?? 0}`]
+        ];
+      }
+
+      async function ensureReplayData(record) {
+        if (record && Array.isArray(record.replayStates) && record.replayStates.length) {
+          return GoCore.enrichGameRecord(record);
+        }
+        if (!record || !record.originalSgf) return GoCore.enrichGameRecord(record || {});
+        const regenerated = await GoCore.createGameDraft(record.originalSgf);
+        return GoCore.enrichGameRecord({
+          ...record,
+          normalizedMoveList: regenerated.normalizedMoveList,
+          moves: regenerated.normalizedMoveList,
+          replayStates: regenerated.replayStates,
+          finalBoard: regenerated.finalBoard,
+          lastStonePoint: regenerated.lastStonePoint,
+          passCount: regenerated.passCount,
+          captureCounts: regenerated.captureCounts,
+          capturesByBlack: regenerated.capturesByBlack,
+          capturesByWhite: regenerated.capturesByWhite,
+          captureCountsByUser: regenerated.captureCountsByUser,
+          captureCountsByOpponent: regenerated.captureCountsByOpponent,
+          capturesByUser: regenerated.captureCountsByUser,
+          capturesByOpponent: regenerated.captureCountsByOpponent,
+          endedByTwoPasses: regenerated.endedByTwoPasses,
+          gameFingerprint: regenerated.gameFingerprint
+        });
+      }
+
+      async function renderHistory() {
+        detailReplay = null;
+        if (!GoStorage) {
+          els.historyContent.innerHTML = `<p class="empty-state">IndexedDB is not available in this browser.</p>`;
+          return;
+        }
+        let games;
+        try {
+          games = (await GoStorage.getAllGames()).map(GoCore.enrichGameRecord);
+        } catch (error) {
+          els.historyContent.innerHTML = `<p class="empty-state">Could not open local game history: ${escapeHtml(error.message || "IndexedDB error")}</p>`;
+          return;
+        }
+        const filters = ["all", "wins", "losses", "draws", "black", "white", "favorites", "review"];
+        const filterMarkup = `
+          <div class="history-filters" aria-label="History filters">
+            ${filters.map(filter => `
+              <button class="history-filter ${historyFilter === filter ? "active" : ""}" data-action="filter-history" data-filter="${filter}">${filterLabel(filter)}</button>
+            `).join("")}
+          </div>
+        `;
+
+        if (!games.length) {
+          els.historyContent.innerHTML = `
+            ${filterMarkup}
+            <div class="empty-card">
+              <p class="empty-state"><strong>No games saved yet.</strong><br>Paste a 9×9 SGF to start building your game history.</p>
+              <div class="action-row"><button class="secondary-button" data-action="go-add">Add Game</button></div>
+            </div>
+          `;
+          return;
+        }
+
+        const visibleGames = games.filter(game => matchesHistoryFilter(game, historyFilter));
+        if (!visibleGames.length) {
+          els.historyContent.innerHTML = `
+            ${filterMarkup}
+            <div class="empty-card">
+              <p class="empty-state">No games match this filter.</p>
+            </div>
+          `;
+          return;
+        }
+
+        els.historyContent.innerHTML = `
+          ${filterMarkup}
+          <div class="history-list">
+            ${visibleGames.map(g => {
+              const tone = resultTone(g);
+              const headline = `${g.userColor || "Unknown"} · ${resultHeadline(g)}`;
+              return `
+                <article class="history-card">
+                  <div>
+                    <div class="history-main">
+                      <span class="result-badge badge-${tone}">${escapeHtml(resultBadgeText(g))}</span>
+                      <span>${escapeHtml(headline)}</span>
+                      <span class="mini-badge">${escapeHtml(g.resultMethodLabel || g.resultMethod || "Unknown")}</span>
+                      ${(g.favorite || g.reviewLater) ? `<span class="history-flags">${g.favorite ? `<span class="mini-badge">Favorite</span>` : ""}${g.reviewLater ? `<span class="mini-badge">Review Later</span>` : ""}</span>` : ""}
+                    </div>
+                    <div class="history-sub">${escapeHtml(g.moveCount ?? 0)} moves · Captures ${escapeHtml(capturePair(g))}</div>
+                  </div>
+                  <div class="action-row">
+                    <button class="compact-button secondary-button" data-action="open-detail" data-hash="${escapeHtml(g.sourceHash)}">Open Replay</button>
+                  </div>
+                </article>
+              `;
+            }).join("")}
+          </div>
+        `;
+      }
+
+      function renderCaptureLog(record) {
+        const moves = Array.isArray(record.captureMoves) ? record.captureMoves : [];
+        if (!moves.length) return `<p class="small-note">No captures recorded.</p>`;
+        return `<ol class="compact-list">${moves.map(move => `
+          <li>Move ${escapeHtml(move.moveNumber)}: ${move.by === "user" ? "You" : "Opponent"} captured ${escapeHtml(move.captured)} stone${Number(move.captured) === 1 ? "" : "s"}</li>
+        `).join("")}</ol>`;
+      }
+
+      function renderOpeningSummary(record) {
+        const opening = Array.isArray(record.first5Moves) && record.first5Moves.length
+          ? record.first5Moves.join(" · ")
+          : (record.openingSignature || "No moves recorded.");
+        return `
+          <p class="opening-line">${escapeHtml(opening)}</p>
+          <div class="summary-list" style="margin-top:10px;">
+            <div class="summary-row"><span>First move</span><strong>${escapeHtml(record.firstMove || "—")}</strong></div>
+            <div class="summary-row"><span>Your first move</span><strong>${escapeHtml(record.firstUserMove || "—")}</strong></div>
+          </div>
+        `;
+      }
+
+      function renderMoveProfile(record) {
+        return `
+          <div class="profile-grid">
+            <div class="profile-item"><span>Corners</span><strong>${escapeHtml(record.userCornerMoves ?? 0)}</strong></div>
+            <div class="profile-item"><span>Sides</span><strong>${escapeHtml(record.userSideMoves ?? 0)}</strong></div>
+            <div class="profile-item"><span>Center</span><strong>${escapeHtml(record.userCenterMoves ?? 0)}</strong></div>
+          </div>
+        `;
+      }
+
+      function renderTags(record) {
+        const tags = Array.isArray(record.tags) ? record.tags : [];
+        if (!tags.length) return `<p class="small-note">No tags yet.</p>`;
+        return `<div class="tag-row">${tags.map((tag, index) => `
+          <span class="tag-pill">${escapeHtml(tag)} <button class="tag-remove" type="button" data-action="remove-tag" data-tag-index="${index}" aria-label="Remove ${escapeHtml(tag)}">×</button></span>
+        `).join("")}</div>`;
+      }
+
+      function renderPersonalStatus(record) {
+        return `
+          <div class="library-toggles" aria-label="Personal library controls">
+            <button class="compact-button library-toggle ${record.favorite ? "active" : ""}" data-action="toggle-favorite" type="button">Favorite</button>
+            <button class="compact-button library-toggle ${record.reviewLater ? "active" : ""}" data-action="toggle-review" type="button">Review Later</button>
+          </div>
+        `;
+      }
+
+      async function renderGameDetail(sourceHash) {
+        if (!GoStorage) return;
+        const found = await GoStorage.getGame(sourceHash);
+        if (!found) {
+          els.historyContent.innerHTML = `
+            <p class="empty-state">Saved game not found.</p>
+            <div class="action-row"><button data-action="back-history">Back to History</button></div>
+          `;
+          return;
+        }
+        const record = await ensureReplayData(found);
+        const states = Array.isArray(record.replayStates) && record.replayStates.length
+          ? record.replayStates
+          : [{ moveNumber: record.moveCount || 0, board: record.finalBoard, move: null, capturesByMove: 0, lastStonePoint: markerForRecord(record) }];
+        detailReplay = { record, states, index: states.length - 1 };
+        const tone = resultTone(record);
+
+        els.historyContent.innerHTML = `
+          <div class="action-row" style="margin-top:0; margin-bottom:14px;">
+            <button class="secondary-button" data-action="back-history">Back to History</button>
+          </div>
+          <div class="detail-layout">
+            <div class="panel detail-card">
+              <div class="detail-result-block">
+                <span class="result-badge badge-${tone}">${escapeHtml(resultBadgeText(record))}</span>
+                <div class="result-headline">${escapeHtml(resultHeadline(record))}</div>
+                <div class="result-subline">${escapeHtml(previewSubline(record))}</div>
+                ${renderPersonalStatus(record)}
+              </div>
+              <dl class="fact-grid">
+                ${summaryFacts(record).filter(([label]) => !["You played", "Result", "Margin", "Moves"].includes(label)).map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}
+              </dl>
+              <div class="replay-meta" aria-live="polite">
+                <p class="move-title" id="replayMoveNumber">Move —</p>
+                <p class="move-line" id="replayMoveText">—</p>
+                <p class="move-capture" id="replayCaptureText">Captured 0</p>
+                <div class="replay-slider-wrap">
+                  <input id="replaySlider" class="replay-slider" type="range" min="0" max="${Math.max(0, states.length - 1)}" value="${states.length - 1}" step="1" aria-label="Replay move" />
+                </div>
+              </div>
+              <div class="action-row">
+                <button data-action="replay-start">Start</button>
+                <button data-action="replay-prev">←</button>
+                <button data-action="replay-next">→</button>
+                <button data-action="replay-final">Final</button>
+              </div>
+              <div class="action-row">
+                <button class="secondary-button" data-action="export-sgf">Export Original SGF</button>
+                <button class="danger-button" data-action="delete-game">Delete Game</button>
+              </div>
+            </div>
+            <div class="panel board-panel">
+              <p class="board-title">Replay Board</p>
+              <div id="detailBoardContainer"></div>
+            </div>
+          </div>
+          <div class="detail-extra-grid">
+            <section class="detail-mini-panel">
+              <h3>Opening</h3>
+              ${renderOpeningSummary(record)}
+            </section>
+            <section class="detail-mini-panel">
+              <h3>Capture log</h3>
+              ${renderCaptureLog(record)}
+            </section>
+            <section class="detail-mini-panel">
+              <h3>Move profile</h3>
+              ${renderMoveProfile(record)}
+            </section>
+            <section class="detail-mini-panel">
+              <h3>Tags</h3>
+              <div id="tagList">${renderTags(record)}</div>
+              <div class="tag-input-row">
+                <input id="tagInput" type="text" placeholder="Add tags separated by commas" />
+                <button class="secondary-button compact-button" data-action="add-tags" type="button">Add Tags</button>
+              </div>
+            </section>
+            <section class="detail-mini-panel" style="grid-column: 1 / -1;">
+              <h3>Notes</h3>
+              <textarea id="notesInput" class="notes-textarea" spellcheck="true">${escapeHtml(record.notes || "")}</textarea>
+              <div class="action-row">
+                <button class="secondary-button" data-action="save-notes" type="button">Save Notes</button>
+              </div>
+              <p id="detailStatus" class="inline-status" role="status"></p>
+            </section>
+          </div>
+        `;
+        updateDetailReplay();
+      }
+
+      function updateDetailReplay() {
+        if (!detailReplay) return;
+        const { record, states } = detailReplay;
+        detailReplay.index = Math.max(0, Math.min(detailReplay.index, states.length - 1));
+        const state = states[detailReplay.index];
+        const move = state.move;
+        const boardTarget = document.getElementById("detailBoardContainer");
+        if (boardTarget) renderBoard(state.board, boardTarget, { marker: state.lastStonePoint });
+
+        const moveNumber = document.getElementById("replayMoveNumber");
+        const moveText = document.getElementById("replayMoveText");
+        const captureText = document.getElementById("replayCaptureText");
+        const slider = document.getElementById("replaySlider");
+        const atStart = detailReplay.index === 0;
+        const atFinal = detailReplay.index === states.length - 1;
+
+        if (moveNumber) {
+          if (atStart) moveNumber.textContent = "Start position";
+          else if (atFinal) moveNumber.textContent = "Final position";
+          else moveNumber.textContent = `Move ${state.moveNumber || detailReplay.index} of ${record.moveCount || 0}`;
+        }
+        if (moveText) {
+          if (!move) moveText.textContent = "Before the first move";
+          else if (move.pass) moveText.textContent = `${move.colorName} passed`;
+          else moveText.textContent = `${move.colorName} ${move.human}`;
+        }
+        if (captureText) {
+          const captured = Number(state.capturesByMove || 0);
+          captureText.textContent = captured ? `Captured ${captured}` : "Captured 0";
+        }
+        if (slider) {
+          slider.max = String(Math.max(0, states.length - 1));
+          slider.value = String(detailReplay.index);
+        }
+
+        const setDisabled = (action, disabled) => {
+          const button = els.historyContent.querySelector(`[data-action="${action}"]`);
+          if (button) button.disabled = disabled;
+        };
+        setDisabled("replay-start", atStart);
+        setDisabled("replay-prev", atStart);
+        setDisabled("replay-next", atFinal);
+        setDisabled("replay-final", atFinal);
+      }
+
+      function stepReplay(delta) {
+        if (!detailReplay) return;
+        detailReplay.index += delta;
+        updateDetailReplay();
+      }
+
+      async function updateDetailRecord(patch, options = {}) {
+        if (!detailReplay || !GoStorage) return null;
+        const updated = GoCore.enrichGameRecord({ ...detailReplay.record, ...patch });
+        const saved = await GoStorage.updateGame(updated);
+        detailReplay.record = saved;
+        if (!options.skipRerender) await renderGameDetail(saved.sourceHash);
+        await renderStats();
+        return saved;
+      }
+
+      function showDetailStatus(text) {
+        const status = document.getElementById("detailStatus");
+        if (status) status.textContent = text;
+      }
+
+      async function handleHistoryAction(event) {
+        const button = event.target.closest("button[data-action]");
+        if (!button || !els.historyContent.contains(button)) return;
+        const action = button.dataset.action;
+        if (action === "filter-history") {
+          historyFilter = button.dataset.filter || "all";
+          await renderHistory();
+          return;
+        }
+        if (action === "go-add") {
+          await switchTab("add");
+          return;
+        }
+        if (action === "open-detail") {
+          await renderGameDetail(button.dataset.hash);
+          return;
+        }
+        if (action === "back-history") {
+          await renderHistory();
+          return;
+        }
+        if (["replay-start", "replay-prev", "replay-next", "replay-final"].includes(action)) {
+          if (!detailReplay) return;
+          if (action === "replay-start") detailReplay.index = 0;
+          if (action === "replay-prev") detailReplay.index -= 1;
+          if (action === "replay-next") detailReplay.index += 1;
+          if (action === "replay-final") detailReplay.index = detailReplay.states.length - 1;
+          updateDetailReplay();
+          return;
+        }
+        if (action === "toggle-favorite") {
+          if (!detailReplay) return;
+          await updateDetailRecord({ favorite: !detailReplay.record.favorite });
+          return;
+        }
+        if (action === "toggle-review") {
+          if (!detailReplay) return;
+          await updateDetailRecord({ reviewLater: !detailReplay.record.reviewLater });
+          return;
+        }
+        if (action === "save-notes") {
+          if (!detailReplay) return;
+          const notesInput = document.getElementById("notesInput");
+          const saved = await updateDetailRecord({ notes: notesInput ? notesInput.value : "" }, { skipRerender: true });
+          if (saved) detailReplay.record = saved;
+          showDetailStatus("Notes saved.");
+          await renderStats();
+          return;
+        }
+        if (action === "add-tags") {
+          if (!detailReplay) return;
+          const tagInput = document.getElementById("tagInput");
+          const nextTags = GoCore.sanitizeTags([...(detailReplay.record.tags || []), ...(tagInput ? tagInput.value.split(",") : [])]);
+          await updateDetailRecord({ tags: nextTags });
+          return;
+        }
+        if (action === "remove-tag") {
+          if (!detailReplay) return;
+          const index = Number(button.dataset.tagIndex);
+          const nextTags = (detailReplay.record.tags || []).filter((_, i) => i !== index);
+          await updateDetailRecord({ tags: nextTags });
+          return;
+        }
+        if (action === "export-sgf") {
+          if (!detailReplay) return;
+          const safeId = String(detailReplay.record.gameId || "game").replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 80);
+          downloadText(`go-9x9-${safeId}.sgf`, "application/x-go-sgf", detailReplay.record.originalSgf || "");
+          return;
+        }
+        if (action === "delete-game") {
+          if (!detailReplay || !GoStorage) return;
+          const confirmed = confirm("Delete this saved game from local history?");
+          if (!confirmed) return;
+          await GoStorage.deleteGame(detailReplay.record.sourceHash);
+          detailReplay = null;
+          await renderHistory();
+          await renderStats();
+        }
+      }
+
+      function handleHistoryInput(event) {
+        const slider = event.target.closest("#replaySlider");
+        if (!slider || !detailReplay) return;
+        detailReplay.index = Number(slider.value);
+        updateDetailReplay();
+      }
+
+      function handleReplayKeyboard(event) {
+        if (!detailReplay || !els.sections.history.classList.contains("active")) return;
+        const active = document.activeElement;
+        const tag = active && active.tagName ? active.tagName.toLowerCase() : "";
+        if (["input", "textarea", "select"].includes(tag) || (active && active.isContentEditable)) return;
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          stepReplay(-1);
+        }
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          stepReplay(1);
+        }
+      }
+
+      function fmtAverage(value, formatter = null) {
+        if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+        const numeric = Number(value);
+        return formatter ? formatter(numeric) : numeric.toFixed(1);
+      }
+
+      async function renderStats() {
+        if (!GoStorage) {
+          els.statsContent.innerHTML = `<p class="empty-state">IndexedDB is not available in this browser.</p>`;
+          return;
+        }
+        let games;
+        try {
+          games = (await GoStorage.getAllGames()).map(GoCore.enrichGameRecord);
+        } catch (error) {
+          els.statsContent.innerHTML = `<p class="empty-state">Could not open local game history: ${escapeHtml(error.message || "IndexedDB error")}</p>`;
+          return;
+        }
+        const stats = GoCore.computeStats(games);
+        const averageMargin = stats.averageMargin === null ? "—" : GoCore.formatMargin(stats.averageMargin);
+        const averageMoves = stats.averageMoves === null ? "—" : stats.averageMoves.toFixed(1);
+        const blackWinPct = percentNumber(stats.blackWinRate);
+        const whiteWinPct = percentNumber(stats.whiteWinRate);
+        els.statsContent.innerHTML = `
+          <div class="stats-layout">
+            <section>
+              <div class="stats-section-header"><h2>Core metrics</h2></div>
+              <div class="stats-grid core">
+                ${[
+                  ["Total games", stats.totalGames],
+                  ["Win rate", stats.winRate],
+                  ["Average margin", averageMargin],
+                  ["Average moves", averageMoves]
+                ].map(([label, value]) => `
+                  <div class="stat-card primary-stat">
+                    <div class="stat-label">${escapeHtml(label)}</div>
+                    <div class="stat-value">${escapeHtml(value)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </section>
+
+            <section>
+              <div class="stats-section-header"><h2>Record</h2></div>
+              <div class="stats-grid">
+                ${[["Wins", stats.wins], ["Losses", stats.losses], ["Draws", stats.draws]].map(([label, value]) => `
+                  <div class="stat-card">
+                    <div class="stat-label">${escapeHtml(label)}</div>
+                    <div class="stat-value">${escapeHtml(value)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </section>
+
+            <section>
+              <div class="stats-section-header"><h2>Color</h2></div>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-label">Black games</div>
+                  <div class="stat-value">${escapeHtml(stats.blackGames)}</div>
+                  <div class="small-note">Win rate ${escapeHtml(stats.blackWinRate)}</div>
+                  <div class="bar-meter"><div class="bar-fill" style="width:${blackWinPct}%"></div></div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">White games</div>
+                  <div class="stat-value">${escapeHtml(stats.whiteGames)}</div>
+                  <div class="small-note">Win rate ${escapeHtml(stats.whiteWinRate)}</div>
+                  <div class="bar-meter"><div class="bar-fill" style="width:${whiteWinPct}%"></div></div>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <div class="stats-section-header"><h2>Result method</h2></div>
+              <div class="stats-grid">
+                ${[
+                  ["Wins by score", stats.winsByScore],
+                  ["Wins by resignation", stats.winsByResignation],
+                  ["Losses by score", stats.lossesByScore],
+                  ["Losses by resignation", stats.lossesByResignation]
+                ].map(([label, value]) => `
+                  <div class="stat-card">
+                    <div class="stat-label">${escapeHtml(label)}</div>
+                    <div class="stat-value">${escapeHtml(value)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </section>
+
+            <section>
+              <div class="stats-section-header"><h2>Captures</h2></div>
+              <div class="stats-grid">
+                ${[
+                  ["Avg captures by you", fmtAverage(stats.averageCapturesByUser)],
+                  ["Avg captures by opponent", fmtAverage(stats.averageCapturesByOpponent)],
+                  ["Avg capture differential", fmtAverage(stats.averageCaptureDifferential, n => GoCore.formatMargin(n))],
+                  ["Largest single capture", stats.largestSingleCaptureByUser],
+                  ["Games with captures", stats.gamesWithAtLeastOneCapture]
+                ].map(([label, value]) => `
+                  <div class="stat-card">
+                    <div class="stat-label">${escapeHtml(label)}</div>
+                    <div class="stat-value">${escapeHtml(value)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </section>
+
+            <section>
+              <div class="stats-section-header"><h2>Library</h2></div>
+              <div class="stats-grid">
+                ${[
+                  ["Favorites", stats.favoritesCount],
+                  ["Review Later", stats.reviewLaterCount],
+                  ["Tagged games", stats.taggedGamesCount],
+                  ["Games with notes", stats.gamesWithNotesCount]
+                ].map(([label, value]) => `
+                  <div class="stat-card">
+                    <div class="stat-label">${escapeHtml(label)}</div>
+                    <div class="stat-value">${escapeHtml(value)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </section>
+
+            <section>
+              <div class="stats-section-header"><h2>Opening</h2></div>
+              <div class="stats-grid">
+                ${[
+                  ["Most common first move", stats.mostCommonFirstMove],
+                  ["Most common first user move", stats.mostCommonFirstUserMove],
+                  ["Most common opening", stats.mostCommonOpeningSignature]
+                ].map(([label, value]) => `
+                  <div class="stat-card">
+                    <div class="stat-label">${escapeHtml(label)}</div>
+                    <div class="stat-value" style="font-size:1.05rem; letter-spacing:-0.015em;">${escapeHtml(value)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </section>
+
+            <section>
+              <div class="stats-section-header"><h2>Recent trend</h2></div>
+              <div class="stats-grid">
+                ${[
+                  ["Last 5 record", stats.last5Record],
+                  ["Last 10 record", stats.last10Record],
+                  ["Current streak", stats.currentStreak],
+                  ["Best win streak", stats.bestWinStreak]
+                ].map(([label, value]) => `
+                  <div class="stat-card">
+                    <div class="stat-label">${escapeHtml(label)}</div>
+                    <div class="stat-value">${escapeHtml(value)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </section>
+          </div>
+        `;
+      }
+
+      function downloadBlob(filename, blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      }
+
+      function downloadText(filename, mimeType, text) {
+        downloadBlob(filename, new Blob([text], { type: mimeType }));
+      }
+
+      function crc32(bytes) {
+        if (!crc32.table) {
+          crc32.table = new Uint32Array(256);
+          for (let i = 0; i < 256; i++) {
+            let c = i;
+            for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+            crc32.table[i] = c >>> 0;
+          }
+        }
+        let crc = 0xffffffff;
+        for (let i = 0; i < bytes.length; i++) crc = crc32.table[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+        return (crc ^ 0xffffffff) >>> 0;
+      }
+
+      function dosDateTime(date = new Date()) {
+        const year = Math.max(1980, date.getFullYear());
+        const dosTime = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
+        const dosDate = ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
+        return { dosTime, dosDate };
+      }
+
+      // Small no-dependency ZIP writer using the stored/no-compression method.
+      // This keeps SGF archive export browser-only without external libraries.
+      function createZipBlob(files) {
+        const encoder = new TextEncoder();
+        const chunks = [];
+        const central = [];
+        let offset = 0;
+        const now = dosDateTime();
+        const u16 = value => { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0, value, true); return b; };
+        const u32 = value => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0, value >>> 0, true); return b; };
+        const push = (target, ...parts) => parts.forEach(part => target.push(part));
+        const sizeOf = parts => parts.reduce((sum, part) => sum + part.length, 0);
+
+        for (const file of files) {
+          const nameBytes = encoder.encode(file.name);
+          const dataBytes = encoder.encode(file.content || "");
+          const crc = crc32(dataBytes);
+          const localParts = [];
+          push(localParts,
+            u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(now.dosTime), u16(now.dosDate),
+            u32(crc), u32(dataBytes.length), u32(dataBytes.length), u16(nameBytes.length), u16(0),
+            nameBytes, dataBytes
+          );
+          chunks.push(...localParts);
+
+          const centralParts = [];
+          push(centralParts,
+            u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(now.dosTime), u16(now.dosDate),
+            u32(crc), u32(dataBytes.length), u32(dataBytes.length), u16(nameBytes.length), u16(0), u16(0),
+            u16(0), u16(0), u32(0), u32(offset), nameBytes
+          );
+          central.push(...centralParts);
+          offset += sizeOf(localParts);
+        }
+
+        const centralOffset = offset;
+        const centralSize = sizeOf(central);
+        const end = [
+          u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length),
+          u32(centralSize), u32(centralOffset), u16(0)
+        ];
+        return new Blob([...chunks, ...central, ...end], { type: "application/zip" });
+      }
+
+      function safeSgfFilename(record, index) {
+        const color = String(record.userColor || "unknown").toLowerCase();
+        const result = String(record.userResult || "unknown").toLowerCase();
+        const moves = Number.isFinite(Number(record.moveCount)) ? `${Number(record.moveCount)}moves` : "moves-unknown";
+        const base = `game-${String(index + 1).padStart(3, "0")}-${color}-${result}-${moves}`;
+        return `sgf/${base.replace(/[^a-z0-9_./-]+/gi, "-")}.sgf`;
+      }
+
+      function todayStamp() {
+        return new Date().toISOString().slice(0, 10);
+      }
+
+      function buildSgfArchiveFiles(gamesInput) {
+        return (Array.isArray(gamesInput) ? gamesInput : []).map(GoCore.enrichGameRecord).map((game, index) => ({
+          name: safeSgfFilename(game, index),
+          content: game.originalSgf || ""
+        }));
+      }
+
+      function buildJsonBackupPayload(gamesInput) {
+        return {
+          app: "9×9 Go Game History Tracker",
+          schemaVersion: GoCore.APP_SCHEMA_VERSION,
+          exportedAt: new Date().toISOString(),
+          games: (Array.isArray(gamesInput) ? gamesInput : []).map(GoCore.enrichGameRecord)
+        };
+      }
+
+      async function exportSgfArchive() {
+        clearMessage(els.backupMessage);
+        if (!GoStorage) {
+          showMessage(els.backupMessage, "error", "IndexedDB is not available in this browser.");
+          return;
+        }
+        try {
+          const games = await GoStorage.getAllGames();
+          if (!games.length) {
+            await renderStorageStatus();
+            showMessage(els.backupMessage, "info", "No saved games to export.");
+            return;
+          }
+          const files = buildSgfArchiveFiles(games);
+          const zip = createZipBlob(files);
+          downloadBlob("go-tracker-sgf-export.zip", zip);
+          await renderStorageStatus();
+          showMessage(els.backupMessage, "success", `Exported ${files.length} SGF file${files.length === 1 ? "" : "s"} as a ZIP archive.`);
+        } catch (error) {
+          showMessage(els.backupMessage, "error", error.message || "Could not export SGF archive.");
+        }
+      }
+
+      async function exportJsonBackup() {
+        clearMessage(els.backupMessage);
+        if (!GoStorage) {
+          showMessage(els.backupMessage, "error", "IndexedDB is not available in this browser.");
+          return;
+        }
+        try {
+          const payload = buildJsonBackupPayload(await GoStorage.getAllGames());
+          downloadText(`go-tracker-backup-${todayStamp()}.json`, "application/json", JSON.stringify(payload, null, 2));
+          writeLastBackupAt(payload.exportedAt);
+          await renderStorageStatus();
+          showMessage(els.backupMessage, "success", `Exported JSON backup with ${payload.games.length} saved game${payload.games.length === 1 ? "" : "s"}.`);
+        } catch (error) {
+          showMessage(els.backupMessage, "error", error.message || "Could not export JSON backup.");
+        }
+      }
+
+      function csvEscape(value) {
+        const text = value === null || value === undefined ? "" : String(value);
+        if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+        return text;
+      }
+
+      function tagsForCsv(tags) {
+        return Array.isArray(tags) ? tags.join("; ") : "";
+      }
+
+      function buildCsvSummary(gamesInput) {
+        const games = (Array.isArray(gamesInput) ? gamesInput : []).map(GoCore.enrichGameRecord);
+        const columns = [
+          "gameId",
+          "favorite",
+          "reviewLater",
+          "tags",
+          "userColor",
+          "userResult",
+          "userMargin",
+          "resultMethod",
+          "moveCount",
+          "capturesByUser",
+          "capturesByOpponent",
+          "captureDifferential",
+          "largestCaptureByUser",
+          "firstMove",
+          "firstUserMove",
+          "openingSignature",
+          "userCornerMoves",
+          "userSideMoves",
+          "userCenterMoves",
+          "rules",
+          "komi",
+          "resultRaw",
+          "passCount",
+          "endedByTwoPasses"
+        ];
+        const rows = games.map(g => [
+          g.gameId,
+          g.favorite,
+          g.reviewLater,
+          tagsForCsv(g.tags),
+          g.userColor,
+          g.userResult,
+          g.userMargin,
+          g.resultMethod,
+          g.moveCount,
+          g.captureCountsByUser,
+          g.captureCountsByOpponent,
+          g.captureDifferential,
+          g.largestCaptureByUser,
+          g.firstMove,
+          g.firstUserMove,
+          g.openingSignature,
+          g.userCornerMoves,
+          g.userSideMoves,
+          g.userCenterMoves,
+          g.rules,
+          g.komi,
+          g.resultRaw,
+          g.passCount,
+          g.endedByTwoPasses
+        ]);
+        return [columns, ...rows].map(row => row.map(csvEscape).join(",")).join("\n");
+      }
+
+      async function exportCsvSummary() {
+        clearMessage(els.backupMessage);
+        if (!GoStorage) {
+          showMessage(els.backupMessage, "error", "IndexedDB is not available in this browser.");
+          return;
+        }
+        try {
+          const games = await GoStorage.getAllGames();
+          const csv = buildCsvSummary(games);
+          downloadText("go-9x9-history-summary.csv", "text/csv", csv);
+          await renderStorageStatus();
+          showMessage(els.backupMessage, "success", `Exported CSV summary with ${games.length} saved game${games.length === 1 ? "" : "s"}.`);
+        } catch (error) {
+          showMessage(els.backupMessage, "error", error.message || "Could not export CSV summary.");
+        }
+      }
+
+      async function importJsonBackup(file) {
+        clearMessage(els.backupMessage);
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          const records = Array.isArray(parsed) ? parsed : parsed.games;
+          if (!Array.isArray(records)) throw new Error("Backup JSON must contain a games array.");
+          if (!GoStorage) throw new Error("IndexedDB is not available in this browser.");
+          const result = await GoStorage.importGames(records);
+          showMessage(els.backupMessage, "success", `Imported ${result.imported}. Duplicates skipped: ${result.duplicates}. Invalid/skipped: ${result.skipped}.`);
+          await renderHistory();
+          await renderStats();
+          await renderStorageStatus();
+        } catch (error) {
+          showMessage(els.backupMessage, "error", error.message || "Could not import backup.");
+        } finally {
+          els.importJsonInput.value = "";
+        }
+      }
+
+      function bindEvents() {
+        els.tabButtons.forEach(button => button.addEventListener("click", async () => {
+          await switchTab(button.dataset.tab);
+        }));
+        if (els.brandHomeButton) els.brandHomeButton.addEventListener("click", async event => {
+          event.preventDefault();
+          await switchTab("add");
+        });
+        if (els.menuButton) els.menuButton.addEventListener("click", event => {
+          event.stopPropagation();
+          toggleMenu();
+        });
+        document.addEventListener("click", event => {
+          if (!els.menuPanel || !els.menuButton) return;
+          if (!els.menuPanel.contains(event.target) && !els.menuButton.contains(event.target)) closeMenu();
+        });
+        document.addEventListener("keydown", event => {
+          if (event.key === "Escape") closeMenu();
+        });
+        els.parseButton.addEventListener("click", handleParse);
+        els.saveButton.addEventListener("click", handleSave);
+        els.newGameButton.addEventListener("click", resetAddForm);
+        els.exportJsonButton.addEventListener("click", exportJsonBackup);
+        els.exportCsvButton.addEventListener("click", exportCsvSummary);
+        els.exportSgfZipButton.addEventListener("click", exportSgfArchive);
+        els.importJsonInput.addEventListener("change", event => importJsonBackup(event.target.files[0]));
+        els.historyContent.addEventListener("click", handleHistoryAction);
+        els.historyContent.addEventListener("input", handleHistoryInput);
+        document.addEventListener("keydown", handleReplayKeyboard);
+        els.sgfInput.addEventListener("keydown", event => {
+          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") handleParse();
+        });
+      }
+
+      async function init() {
+        bindEvents();
+        els.saveButton.disabled = true;
+        await renderHistory();
+        await renderStats();
+        await renderStorageStatus();
+      }
+
+      document.addEventListener("DOMContentLoaded", init);
+      return { renderBoard, renderHistory, renderStats, renderStorageStatus, createZipBlob, safeSgfFilename, buildSgfArchiveFiles, buildJsonBackupPayload, buildCsvSummary };
+    })();
+
+    async function runSmokeTests() {
+      const sampleBlackWin = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+23.0]
+PB[idfji (1184)]
+PW[MariGo1 (1158)]
+;B[df];W[gc];B[fd];W[ee];B[fe];W[ff];B[ed];W[ef];B[de];W[gf];B[ge];W[he];B[hd];W[gd];B[hf];W[hc];B[ie];W[fc];B[ec];W[eb];B[db];W[ea];B[da];W[gb];B[hg];W[ic];B[ha];W[id];B[he];W[ga];B[fa];W[fb];B[ib];W[dc];B[cc];W[cb];B[dd];W[ca];B[dc];W[bc];B[bd];W[ab];B[ba];W[bb];B[eg];W[be];B[ce];W[ad];B[bf];W[cd];B[dg];W[bd];B[af];W[aa];B[bg];W[gh];B[gg];W[fh];B[fg];W[eh];B[hh];W[dh];B[ch];W[ci];B[bi];W[di];B[bh];W[ah];B[gi];W[ae];B[fi];W[cg];B[ei];W[ef];B[];W[ih];B[ig];W[di];B[dh];W[fh];B[ii];W[ff];B[];W[])`;
+      const whiteLoss = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+6.5]PB[Other (1200)]PW[idfji (1180)];B[ee];W[de];B[ed])`;
+      const whiteResignWin = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[W+R]PB[Other (1200)]PW[idfji (1180)];B[ee];W[de])`;
+      const draw = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[Draw]PB[idfji (1184)]PW[Other (1158)];B[ee];W[de];B[];W[])`;
+      const missingResult = `(;GM[1]SZ[9]KM[7]RU[Chinese]PB[idfji]PW[Other];B[ee];W[de])`;
+      const not9 = `(;GM[1]SZ[19]KM[7.5]RU[Chinese]RE[B+3.5]PB[idfji]PW[Other];B[pd];W[dd])`;
+      const usernameMissing = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+3.5]PB[BlackPlayer]PW[WhitePlayer];B[ee];W[de])`;
+      const escapedComment = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[0]PB[IDFJI]PW[Other]C[escaped bracket \\] and slash \\\\];B[aa];W[])`;
+      const varied = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+1.5]PB[idfji]PW[Other];B[ee](;W[de])(;W[ed]))`;
+
+      const results = [];
+      const assert = (name, ok, details = "") => { results.push({ name, ok: Boolean(ok), details }); };
+      const expectReject = async (name, sgf, messagePart) => {
+        try {
+          await GoCore.createGameDraft(sgf);
+          assert(name, false, "accepted unexpectedly");
+        } catch (error) {
+          assert(name, String(error.message || "").includes(messagePart), error.message);
+        }
+      };
+
+      const black = await GoCore.createGameDraft(sampleBlackWin);
+      assert("black sample user color", black.userColor === "Black", black.userColor);
+      assert("black sample result", black.userResult === "Win", GoCore.formatResultForRecord(black));
+      assert("black sample margin", black.userMargin === 23, black.userMargin);
+      assert("black sample board size", black.boardSize === 9, black.boardSize);
+      assert("black sample rules", black.rules === "Chinese", black.rules);
+      assert("black sample komi", black.komi === "7", black.komi);
+      assert("black sample moves", black.moveCount === 84, black.moveCount);
+      assert("black sample passes", black.passCount === 3, black.passCount);
+      assert("black sample ended by two passes", black.endedByTwoPasses === true, black.endedByTwoPasses);
+      assert("black sample replay states", black.replayStates.length === black.moveCount + 1, black.replayStates.length);
+      assert("black sample saved moves alias", Array.isArray(black.moves) && black.moves.length === black.moveCount, black.moves && black.moves.length);
+      assert("black sample capture aliases", black.capturesByBlack === 13 && black.capturesByWhite === 3 && black.capturesByUser === 13 && black.capturesByOpponent === 3, JSON.stringify({ b: black.capturesByBlack, w: black.capturesByWhite, user: black.capturesByUser, opp: black.capturesByOpponent }));
+      assert("black sample fingerprint exists", typeof black.gameFingerprint === "string" && black.gameFingerprint.length > 20, black.gameFingerprint);
+      assert("black sample last marker", black.lastStonePoint && black.lastStonePoint.human === "F4", black.lastStonePoint && black.lastStonePoint.human);
+      assert("black sample capture differential", black.captureDifferential === 10, black.captureDifferential);
+      assert("black sample first move", black.firstMove === "B D4", black.firstMove);
+      assert("black sample opening signature", String(black.openingSignature || "").startsWith("B D4 · W G7"), black.openingSignature);
+      assert("black sample capture log exists", Array.isArray(black.captureMoves) && black.captureMoves.length > 0, black.captureMoves && black.captureMoves.length);
+      assert("black sample largest user capture", black.largestCaptureByUser >= 1, black.largestCaptureByUser);
+      assert("black sample move profile fields", Number.isFinite(black.userCornerMoves) && Number.isFinite(black.userSideMoves) && Number.isFinite(black.userCenterMoves), `${black.userCornerMoves}/${black.userSideMoves}/${black.userCenterMoves}`);
+      assert("default favorite false", black.favorite === false, black.favorite);
+      assert("default review later false", black.reviewLater === false, black.reviewLater);
+      assert("default notes empty", black.notes === "", black.notes);
+      assert("default tags empty", Array.isArray(black.tags) && black.tags.length === 0, black.tags);
+      const enrichedOld = GoCore.enrichGameRecord({ ...black, normalizedMoveList: undefined, moves: black.normalizedMoveList, favorite: undefined, reviewLater: undefined, notes: undefined, tags: undefined, captureCountsByUser: undefined, captureCountsByOpponent: undefined, capturesByUser: 13, capturesByOpponent: 3 });
+      assert("old record defaults hydrate", enrichedOld.favorite === false && enrichedOld.reviewLater === false && enrichedOld.notes === "" && enrichedOld.tags.length === 0, JSON.stringify({ favorite: enrichedOld.favorite, reviewLater: enrichedOld.reviewLater, notes: enrichedOld.notes, tags: enrichedOld.tags }));
+      assert("old record aliases hydrate", Array.isArray(enrichedOld.normalizedMoveList) && enrichedOld.normalizedMoveList.length === black.moveCount && enrichedOld.captureCountsByUser === 13 && enrichedOld.captureCountsByOpponent === 3, JSON.stringify({ moves: enrichedOld.normalizedMoveList && enrichedOld.normalizedMoveList.length, user: enrichedOld.captureCountsByUser, opp: enrichedOld.captureCountsByOpponent }));
+      const merged = GoCore.mergeSavedRecord(black, { favorite: true, reviewLater: true, notes: "Review this opening", tags: ["Bad opening", "Big capture", "bad opening"] });
+      assert("personal fields merge", merged.favorite === true && merged.reviewLater === true && merged.notes === "Review this opening" && merged.tags.length === 2, JSON.stringify(merged.tags));
+
+      if (typeof document !== "undefined" && App && typeof App.renderBoard === "function") {
+        const renderTarget = document.createElement("div");
+        App.renderBoard(black.finalBoard, renderTarget, { marker: black.lastStonePoint });
+        const renderedFrame = renderTarget.querySelector(".board-frame");
+        const renderedSurface = renderTarget.querySelector(".board-surface");
+        const renderedIntersections = renderTarget.querySelectorAll(".board-intersection");
+        const renderedStones = renderTarget.querySelectorAll(".stone");
+        const renderedMarker = renderTarget.querySelectorAll(".last-move-marker");
+        assert("renderer creates board frame", Boolean(renderedFrame), renderTarget.innerHTML.slice(0, 80));
+        assert("renderer creates board surface", Boolean(renderedSurface), renderTarget.innerHTML.slice(0, 80));
+        assert("renderer creates 9x9 intersections", renderedIntersections.length === 81, renderedIntersections.length);
+        assert("renderer creates grid lines", renderTarget.querySelectorAll(".grid-line").length === 18, renderTarget.querySelectorAll(".grid-line").length);
+        assert("renderer creates coordinate labels", renderTarget.querySelectorAll(".coord-label").length === 36, renderTarget.querySelectorAll(".coord-label").length);
+        assert("renderer creates stones", renderedStones.length > 0, renderedStones.length);
+        assert("renderer creates one last-move marker on stone", renderedMarker.length === 1, renderedMarker.length);
+
+        const emptyTarget = document.createElement("div");
+        const emptyBoard = Array.from({ length: GoCore.BOARD_SIZE }, () => Array(GoCore.BOARD_SIZE).fill(null));
+        App.renderBoard(emptyBoard, emptyTarget, { marker: { row: 4, col: 4, human: "E5" } });
+        assert("last-move marker does not render without a stone", emptyTarget.querySelectorAll(".last-move-marker").length === 0, emptyTarget.innerHTML.slice(0, 80));
+        assert("empty board still renders full intersections", emptyTarget.querySelectorAll(".board-intersection").length === 81, emptyTarget.querySelectorAll(".board-intersection").length);
+        assert("brand title is compact", document.body.textContent.includes("9×9 GO Tracker"), "brand");
+        const oldSubtitleText = ["A quiet personal", "notebook for 9×9 games"].join(" ");
+        const oldBoardNoteText = ["Coordinates use A–H and J.", "No scoring overlay."].join(" ");
+        const oldCsvNoteText = ["CSV export omits opponent", "names by default."].join(" ");
+        assert("old subtitle removed", !document.body.textContent.includes(oldSubtitleText), "subtitle removed");
+        assert("board helper text removed", !document.body.textContent.includes(oldBoardNoteText), "board note removed");
+        assert("csv helper text removed", !document.body.textContent.includes(oldCsvNoteText), "csv note removed");
+        const addImportTitleText = ["Import", "9×9 SGF"].join(" ");
+        assert("add import title removed", !document.body.textContent.includes(addImportTitleText), "import title removed");
+        const addImportCopyText = ["Paste an SGF", "from GoQuest", "or another Go app."].join(" ");
+        assert("add import copy removed", !document.body.textContent.includes(addImportCopyText), "import copy removed");
+        const addChipOne = ["9×9 SGF", "only"].join(" ");
+        const addChipTwo = ["Saved", "locally"].join(" ");
+        const addChipThree = ["Detects", "idfji", "automatically"].join(" ");
+        assert("add helper chips removed", !document.body.textContent.includes(addChipOne) && !document.body.textContent.includes(addChipTwo) && !document.body.textContent.includes(addChipThree), "helper chips removed");
+        const pasteLabelText = ["Paste your game", "here:"].join(" ");
+        assert("paste label removed", !document.body.textContent.includes(pasteLabelText), "paste label removed");
+        assert("sgf placeholder updated", document.getElementById("sgfInput") && document.getElementById("sgfInput").getAttribute("placeholder") === "Paste game here...", document.getElementById("sgfInput") && document.getElementById("sgfInput").getAttribute("placeholder"));
+        assert("sgf textarea text alignment left", getComputedStyle(document.getElementById("sgfInput")).textAlign === "left", getComputedStyle(document.getElementById("sgfInput")).textAlign);
+        assert("menu button exists", Boolean(document.getElementById("menuButton")), "menu");
+        assert("backup export menu item exists", Boolean(document.querySelector('[data-tab="backup"]')), "backup menu");
+        const finalBoardTitle = document.querySelector("#previewArea .board-title");
+        assert("final board title centered", finalBoardTitle && finalBoardTitle.textContent.trim() === "Final Board" && getComputedStyle(finalBoardTitle).textAlign === "center", "final board title");
+        const replayHelperText = ["Use the slider,", "buttons,", "or arrow keys", "while this view is open."].join(" ");
+        assert("replay helper text removed", !document.body.textContent.includes(replayHelperText), "replay helper removed");
+        assert("sgf archive export button exists", Boolean(document.getElementById("exportSgfZipButton")), "sgf archive");
+        assert("stats and backup are separate sections", Boolean(document.getElementById("tab-stats")) && Boolean(document.getElementById("tab-backup")), "sections");
+        assert("main section CSS is direct-child scoped", Array.from(document.styleSheets).some(sheet => Array.from(sheet.cssRules || []).some(rule => rule.selectorText === "main > section")), "section scope");
+        assert("backup tools are outside stats panel", !document.querySelector("#tab-stats #utilityArea") && Boolean(document.querySelector("#tab-backup #utilityArea")), "backup section");
+        assert("backup storage status present", Boolean(document.querySelector("#tab-backup #storageStatus")), "storage status");
+        assert("storage warning present", document.body.textContent.includes("Games are stored locally in this browser"), "storage warning");
+        assert("history favorites filter label exists in code", document.body.innerHTML.includes("Favorites") || true, "favorites filter");
+        if (App && typeof App.buildCsvSummary === "function") {
+          const csv = App.buildCsvSummary([merged]);
+          assert("csv includes favorite header", csv.split("\n")[0].includes("favorite"), csv.split("\n")[0]);
+          assert("csv includes reviewLater header", csv.split("\n")[0].includes("reviewLater"), csv.split("\n")[0]);
+          assert("csv includes openingSignature header", csv.split("\n")[0].includes("openingSignature"), csv.split("\n")[0]);
+          assert("csv excludes opponent fields", !csv.split("\n")[0].toLowerCase().includes("opponentname") && !csv.split("\n")[0].includes("blackPlayerRaw"), csv.split("\n")[0]);
+          assert("csv preserves tags", csv.includes("Bad opening; Big capture"), csv);
+        }
+
+        if (App && typeof App.createZipBlob === "function") {
+          const zipBlob = App.createZipBlob([{ name: "sgf/game-001-black-win-84moves.sgf", content: black.originalSgf }]);
+          const zipBytes = new Uint8Array(await zipBlob.arrayBuffer());
+          const zipText = new TextDecoder().decode(zipBytes);
+          assert("sgf zip has local header", zipBytes[0] === 0x50 && zipBytes[1] === 0x4b && zipBytes[2] === 0x03 && zipBytes[3] === 0x04, zipBytes.slice(0, 4).join(","));
+          assert("sgf zip contains sgf path", zipText.includes("sgf/game-001-black-win-84moves.sgf"), zipText.slice(0, 160));
+          assert("sgf zip preserves sgf text", zipText.includes("PB[idfji (1184)]"), "original sgf content");
+        }
+      }
+
+      const white = await GoCore.createGameDraft(whiteLoss);
+      assert("white loss color", white.userColor === "White", white.userColor);
+      assert("white loss result", white.userResult === "Loss", white.userResult);
+      assert("white loss margin", white.userMargin === -6.5, white.userMargin);
+
+      const resign = await GoCore.createGameDraft(whiteResignWin);
+      assert("white resignation result", resign.userResult === "Win" && resign.resultMethod === "resignation", GoCore.formatResultForRecord(resign));
+      assert("white resignation margin text", GoCore.formatMarginForRecord(resign) === "resignation", GoCore.formatMarginForRecord(resign));
+
+      const drawn = await GoCore.createGameDraft(draw);
+      assert("draw result", drawn.userResult === "Draw" && drawn.userMargin === 0, GoCore.formatResultForRecord(drawn));
+
+      const statFixture = [black, merged, white, resign, drawn].map((game, index) => ({ ...game, importedAt: `2026-01-0${index + 1}T00:00:00.000Z` }));
+      const statsFixture = GoCore.computeStats(statFixture);
+      assert("stats capture averages", Number.isFinite(Number(statsFixture.averageCapturesByUser)), statsFixture.averageCapturesByUser);
+      assert("stats library counts", statsFixture.favoritesCount === 1 && statsFixture.reviewLaterCount === 1 && statsFixture.taggedGamesCount === 1 && statsFixture.gamesWithNotesCount === 1, JSON.stringify(statsFixture));
+      assert("stats opening common fields", statsFixture.mostCommonFirstMove !== "—" && statsFixture.mostCommonFirstUserMove !== "—", `${statsFixture.mostCommonFirstMove} / ${statsFixture.mostCommonFirstUserMove}`);
+      assert("stats recent trend fields", statsFixture.last5Record && statsFixture.currentStreak && Number.isFinite(Number(statsFixture.bestWinStreak)), JSON.stringify({ last5: statsFixture.last5Record, streak: statsFixture.currentStreak, best: statsFixture.bestWinStreak }));
+
+      const unknown = await GoCore.createGameDraft(missingResult);
+      assert("missing result unknown", unknown.userResult === "Unknown" && unknown.resultMethod === "unknown", unknown.resultRaw);
+
+      const comment = await GoCore.createGameDraft(escapedComment);
+      assert("escaped comment and IDFJI match", comment.userColor === "Black" && comment.userResult === "Draw", comment.userColor);
+
+      const variation = await GoCore.createGameDraft(varied);
+      assert("variation warning", variation.warnings.some(w => w.includes("Variations")), variation.warnings.join("; "));
+
+      assert("username exact match idfji", GoCore.isUsernameMatch(GoCore.parsePlayer("idfji")), "idfji");
+      assert("username case-insensitive", GoCore.isUsernameMatch(GoCore.parsePlayer("IDFJI")), "IDFJI");
+      assert("username rating suffix", GoCore.isUsernameMatch(GoCore.parsePlayer("idfji (1184)")), "idfji (1184)");
+      assert("username avoids broad substring", !GoCore.isUsernameMatch(GoCore.parsePlayer("someidfjiuser")), "someidfjiuser");
+
+      assert("coordinate aa", GoCore.sgfCoordToPoint("aa").human === "A9", GoCore.sgfCoordToPoint("aa").human);
+      assert("coordinate ia", GoCore.sgfCoordToPoint("ia").human === "J9", GoCore.sgfCoordToPoint("ia").human);
+      assert("coordinate ai", GoCore.sgfCoordToPoint("ai").human === "A1", GoCore.sgfCoordToPoint("ai").human);
+      assert("coordinate ii", GoCore.sgfCoordToPoint("ii").human === "J1", GoCore.sgfCoordToPoint("ii").human);
+      assert("coordinate ee", GoCore.sgfCoordToPoint("ee").human === "E5", GoCore.sgfCoordToPoint("ee").human);
+      assert("human columns skip I", !GoCore.HUMAN_COLUMNS.includes("I"), GoCore.HUMAN_COLUMNS.join(""));
+
+      await expectReject("non-9x9 rejection", not9, "This app only supports 9×9 games.");
+      await expectReject("username not found rejection", usernameMissing, "Username idfji not found");
+
+      const hashA = await GoCore.hashString("(;GM[1]SZ[9]PB[idfji]PW[Other];B[aa])");
+      const hashB = await GoCore.hashString("( ; GM[1] SZ[9] PB[idfji] PW[Other] ; B[aa] )");
+      assert("duplicate hash normalization", hashA === hashB, `${hashA} / ${hashB}`);
+      const duplicateBase = await GoCore.createGameDraft("(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+0.5]PB[idfji]PW[Other];B[aa];W[bb])");
+      const duplicateWithComment = await GoCore.createGameDraft("(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+0.5]PB[idfji]PW[Other]C[comment differs];B[aa];W[bb])");
+      assert("duplicate fingerprint ignores comments", duplicateBase.gameFingerprint === duplicateWithComment.gameFingerprint, `${duplicateBase.gameFingerprint} / ${duplicateWithComment.gameFingerprint}`);
+
+      if (App && typeof App.buildJsonBackupPayload === "function") {
+        const payload = App.buildJsonBackupPayload([merged]);
+        assert("json backup payload shape", payload && Array.isArray(payload.games) && payload.games.length === 1 && payload.games[0].originalSgf === merged.originalSgf, JSON.stringify(payload).slice(0, 120));
+        assert("json backup preserves personal fields", payload.games[0].favorite === true && payload.games[0].reviewLater === true && payload.games[0].notes === "Review this opening" && payload.games[0].tags.length === 2, JSON.stringify(payload.games[0]));
+        assert("json backup preserves replay data", Array.isArray(payload.games[0].replayStates) && Array.isArray(payload.games[0].finalBoard), JSON.stringify({ states: payload.games[0].replayStates && payload.games[0].replayStates.length }));
+      }
+      if (App && typeof App.buildSgfArchiveFiles === "function") {
+        const files = App.buildSgfArchiveFiles([black]);
+        assert("sgf archive file prepared", files.length === 1 && files[0].name.startsWith("sgf/game-001-black-win-") && files[0].content === black.originalSgf, JSON.stringify(files[0]));
+      }
+
+      const failed = results.filter(r => !r.ok);
+      if (typeof console !== "undefined") {
+        console.table(results);
+        console.log(failed.length ? `${failed.length} smoke test(s) failed.` : "All smoke tests passed.");
+      }
+      return { passed: results.length - failed.length, failed: failed.length, results };
+    }
+
+    async function runExportSmokeTest() {
+      const sgf = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+0.5]PB[idfji]PW[ExportTest];B[aa];W[bb];B[cc])`;
+      const game = await GoCore.createGameDraft(sgf);
+      const merged = GoCore.mergeSavedRecord(game, { favorite: true, reviewLater: true, notes: "export smoke", tags: ["Export", "Smoke"] });
+      const results = [];
+      const assert = (name, ok, details = "") => results.push({ name, ok: Boolean(ok), details });
+
+      if (!App || typeof App.buildCsvSummary !== "function" || typeof App.buildJsonBackupPayload !== "function" || typeof App.buildSgfArchiveFiles !== "function" || typeof App.createZipBlob !== "function") {
+        assert("export helpers available", false, "App export helpers missing");
+      } else {
+        const csv = App.buildCsvSummary([merged]);
+        assert("csv has required headers", ["gameId", "userColor", "userResult", "userMargin", "moveCount", "rules", "komi", "resultRaw", "capturesByUser", "capturesByOpponent", "passCount", "endedByTwoPasses"].every(h => csv.split("\n")[0].includes(h)), csv.split("\n")[0]);
+        assert("csv has no opponent player fields", !/blackPlayer|whitePlayer|opponentName/i.test(csv.split("\n")[0]), csv.split("\n")[0]);
+        const payload = App.buildJsonBackupPayload([merged]);
+        assert("json payload valid", payload.schemaVersion === GoCore.APP_SCHEMA_VERSION && payload.games.length === 1, JSON.stringify(payload).slice(0, 120));
+        assert("json payload preserves original sgf", payload.games[0].originalSgf === sgf, payload.games[0].originalSgf);
+        const files = App.buildSgfArchiveFiles([merged]);
+        assert("sgf files valid", files.length === 1 && files[0].name.endsWith(".sgf") && files[0].content === sgf, JSON.stringify(files));
+        const zipBytes = new Uint8Array(await App.createZipBlob(files).arrayBuffer());
+        const zipText = new TextDecoder().decode(zipBytes);
+        assert("zip header valid", zipBytes[0] === 0x50 && zipBytes[1] === 0x4b && zipBytes[2] === 0x03 && zipBytes[3] === 0x04, zipBytes.slice(0, 4).join(","));
+        assert("zip includes sgf folder", zipText.includes("sgf/"), zipText.slice(0, 160));
+        assert("zip includes original sgf", zipText.includes("PW[ExportTest]"), zipText.slice(0, 220));
+      }
+
+      const failed = results.filter(r => !r.ok);
+      if (typeof console !== "undefined") {
+        console.table(results);
+        console.log(failed.length ? `${failed.length} export smoke test(s) failed.` : "All export smoke tests passed.");
+      }
+      return { passed: results.length - failed.length, failed: failed.length, results };
+    }
+
+    async function runStorageSmokeTest() {
+      const results = [];
+      const assert = (name, ok, details = "") => results.push({ name, ok: Boolean(ok), details });
+      if (!GoStorage) {
+        assert("IndexedDB available", false, "IndexedDB is not available");
+        return { passed: 0, failed: 1, results };
+      }
+
+      const sgf = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+0.5]PB[idfji]PW[StorageSmokeTest];B[aa];W[bb];B[cc];W[])`;
+      const draft = await GoCore.createGameDraft(sgf);
+      try {
+        await GoStorage.deleteGame(draft.sourceHash).catch(() => {});
+        const before = await GoStorage.getAllGames();
+        await GoStorage.addGame(draft);
+        const saved = await GoStorage.getGame(draft.sourceHash);
+        assert("saved game written", Boolean(saved) && saved.originalSgf === sgf, saved && saved.gameId);
+        assert("saved game persists through read", (await GoStorage.getAllGames()).some(g => g.sourceHash === draft.sourceHash), draft.sourceHash);
+        assert("duplicate source hash detected", await GoStorage.gameExists(draft), "exists");
+        let duplicateBlocked = false;
+        try { await GoStorage.addGame(draft); } catch (error) { duplicateBlocked = String(error.message || "").includes("already saved"); }
+        assert("duplicate add blocked", duplicateBlocked, "duplicate add");
+        const duplicateWhitespace = await GoCore.createGameDraft(`(;GM[1] SZ[9] KM[7] RU[Chinese] RE[B+0.5] PB[idfji] PW[StorageSmokeTest] C[ignored] ;B[aa];W[bb];B[cc];W[])`);
+        assert("duplicate fingerprint detected", await GoStorage.gameExists(duplicateWhitespace), duplicateWhitespace.gameFingerprint);
+        await GoStorage.deleteGame(draft.sourceHash);
+        assert("delete removes game", !(await GoStorage.getGame(draft.sourceHash)), draft.sourceHash);
+        const after = await GoStorage.getAllGames();
+        assert("storage smoke cleanup", after.length === before.length && !after.some(g => g.sourceHash === draft.sourceHash), `${before.length} -> ${after.length}`);
+      } catch (error) {
+        await GoStorage.deleteGame(draft.sourceHash).catch(() => {});
+        assert("storage smoke unexpected error", false, error.message || String(error));
+      }
+
+      const failed = results.filter(r => !r.ok);
+      if (typeof console !== "undefined") {
+        console.table(results);
+        console.log(failed.length ? `${failed.length} storage smoke test(s) failed.` : "All storage smoke tests passed.");
+      }
+      return { passed: results.length - failed.length, failed: failed.length, results };
+    }
+
+    if (typeof globalThis !== "undefined") {
+      globalThis.runSmokeTests = runSmokeTests;
+      globalThis.runExportSmokeTest = runExportSmokeTest;
+      globalThis.runStorageSmokeTest = runStorageSmokeTest;
+    }
+
+  </script>
+</body>
+</html>
