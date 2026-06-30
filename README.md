@@ -8,10 +8,11 @@ A static, browser-only personal history tracker for 9×9 Go SGF games.
 - Preview the parsed result and final board before saving.
 - Save games locally in your browser history.
 - Reopen saved games for replay.
-- View simple personal stats.
+- View personal stats for recent form, result methods, captures, openings, margins, color performance, move locations, and final-board stone counts.
+- Use the Analysis page for local, rule-based patterns, risk signals, review priorities, and suggested focus areas.
 - Export and restore your archive.
 
-The app is focused on history tracking. It does not calculate territory, detect dead stones, verify scores, or provide AI review. The official result comes from the SGF `RE[...]` field.
+The app is focused on history tracking. It does not calculate territory, detect dead stones, verify scores, or provide AI review. The official result comes from the SGF `RE[...]` field. Final-board material stats are stone counts only; they are not score. Analysis is rule-based and uses only saved SGF metadata, replay-derived captures, openings, result methods, and aggregate patterns.
 
 ## How to open it
 
@@ -31,6 +32,12 @@ No server, account, backend, API, npm, build step, or internet connection is req
 6. Click **Save to History**.
 
 The app is hard-coded to detect the user name `idfji` from `PB[...]` or `PW[...]`.
+
+## Analysis page
+
+Use **Analysis** to review local, rule-based patterns across saved games. It summarizes strengths, risk signals, review priorities, opening patterns, capture patterns, game-length patterns, color performance, ratings when available, and suggested focus areas.
+
+Analysis does not evaluate tactics, identify blunders, calculate score, mark dead stones, or judge whether a move was good or bad. Small sample sizes should be treated as weak signals.
 
 ## Where data is stored
 
@@ -54,7 +61,7 @@ The JSON backup is the safest preservation format because it contains the full s
 - result fields
 - replay/final-board data
 - favorites, review-later flags, notes, and tags
-- derived capture/opening/profile fields
+- derived capture/opening/profile/final-board stone-count fields
 
 Back up regularly before clearing browser data or switching devices.
 
@@ -70,7 +77,7 @@ Import merges records with the current archive and skips duplicates using the no
 
 Use **Export CSV summary** to download a spreadsheet-friendly summary of saved games.
 
-The CSV uses user-perspective fields such as color, result, margin, move count, captures, opening summary, and other non-opponent summary fields. It does not include opponent names by default.
+The CSV uses user-perspective fields such as color, result, margin, move count, captures, opening summary, move-location counts, final-board stone counts, and other non-opponent summary fields. It does not include opponent names by default.
 
 ## SGF ZIP export
 
