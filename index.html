@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>9×9 Go Game History Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>GO Tracker</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23d6a35d'/%3E%3Cpath d='M21 9v46M43 9v46M9 21h46M9 43h46' stroke='%231f2933' stroke-width='3' stroke-opacity='.42'/%3E%3Ccircle cx='23' cy='42' r='9' fill='%231f2933'/%3E%3Ccircle cx='42' cy='22' r='9' fill='%23fffaf2' stroke='%231f2933' stroke-opacity='.28' stroke-width='2'/%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
@@ -197,6 +197,10 @@
 
     .menu-panel.open { display: grid; gap: 3px; }
 
+    .menu-backdrop {
+      display: none;
+    }
+
     .menu-item {
       width: 100%;
       border: 0;
@@ -282,8 +286,28 @@
       padding: 22px;
     }
 
+    .add-game-shell {
+      position: relative;
+      min-height: clamp(500px, calc(100dvh - 150px), 760px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding-bottom: clamp(52px, 8dvh, 88px);
+    }
+
+    .add-game-shell.is-previewing {
+      min-height: 0;
+      gap: 0;
+      margin: 0;
+      padding-bottom: 0;
+    }
+
     .paste-panel {
-      max-width: 720px;
+      width: min(100%, 560px);
+      max-width: 560px;
+      min-height: clamp(340px, 44dvh, 430px);
       margin: 0 auto;
     }
 
@@ -292,27 +316,34 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 16px;
-      padding: clamp(20px, 4vw, 34px);
+      gap: 14px;
+      padding: clamp(22px, 3vw, 32px);
     }
 
     .landing-title {
       width: 100%;
-      margin: 0 0 2px;
       text-align: center;
-      font-size: clamp(1.18rem, 2vw, 1.42rem);
-      line-height: 1.2;
-      letter-spacing: -0.025em;
-      font-weight: 820;
+      margin-bottom: 18px;
     }
 
     .paste-panel.collapsed { display: none; }
 
-    .add-flow-note {
-      margin: 8px 0 0;
-      color: var(--muted);
-      font-size: 0.9rem;
+    .add-support-note {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(clamp(10px, 2dvh, 22px) + env(safe-area-inset-bottom, 0px));
+      margin: 0;
+      color: #9ca3af;
+      font-size: 0.82rem;
+      font-weight: 500;
+      line-height: 1.2;
       text-align: center;
+    }
+
+    .paste-panel.collapsed + .add-support-note,
+    .add-game-shell.is-previewing .add-support-note {
+      display: none;
     }
 
     #tab-add {
@@ -372,17 +403,81 @@
       text-align: left;
     }
 
+    .sgf-input-wrap {
+      position: relative;
+      width: min(100%, 500px);
+      margin: 0 auto;
+    }
+
     #sgfInput {
       display: block;
-      width: min(100%, 620px);
-      min-height: 154px;
+      width: 100%;
+      min-height: 132px;
       margin: 0 auto;
+    }
+
+    #sgfInput::placeholder {
+      color: transparent;
+    }
+
+    .sgf-placeholder-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      color: #a1a9b5;
+      font: 700 1rem/1.35 var(--sans);
+      letter-spacing: -0.01em;
+      text-align: center;
+      pointer-events: none;
+      transition: opacity 0.14s ease, visibility 0.14s ease;
+    }
+
+    .sgf-input-wrap.is-focused .sgf-placeholder-overlay,
+    .sgf-input-wrap.has-value .sgf-placeholder-overlay,
+    .sgf-input-wrap:has(#sgfInput:focus) .sgf-placeholder-overlay,
+    .sgf-input-wrap:has(#sgfInput:not(:placeholder-shown)) .sgf-placeholder-overlay {
+      opacity: 0;
+      visibility: hidden;
     }
 
     .paste-action-row {
       justify-content: center;
       width: 100%;
-      margin-top: 0;
+      margin-top: 6px;
+    }
+
+    .save-upload-row {
+      align-items: stretch;
+      justify-content: center;
+      flex-wrap: nowrap;
+      gap: 10px;
+    }
+
+    .save-upload-row .primary-button {
+      min-width: 174px;
+      min-height: 42px;
+      height: 42px;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
+    .upload-plus-button {
+      width: 42px;
+      min-width: 42px;
+      height: 42px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 1.28rem;
+      font-weight: 860;
+      line-height: 1;
+      justify-content: center;
+    }
+
+    .hidden-file-input {
+      display: none !important;
     }
 
     textarea:focus,
@@ -509,10 +604,21 @@
 
     .preview-actions { margin-top: 2px; }
 
-    .preview-card h2,
-    .history-panel h2,
-    .stats-panel h2,
-    .backup-panel h2 {
+    .page-title,
+    .landing-title,
+    .history-panel > h2,
+    .stats-panel > h2,
+    .analysis-panel > h2,
+    .backup-panel > h2 {
+      margin: 0 0 18px;
+      font-size: clamp(1.36rem, 2.6vw, 1.72rem);
+      line-height: 1.14;
+      letter-spacing: -0.035em;
+      font-weight: 860;
+      color: var(--text);
+    }
+
+    .preview-card h2 {
       margin: 0 0 14px;
       font-size: 1.2rem;
       letter-spacing: -0.026em;
@@ -738,6 +844,22 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .history-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      min-width: max-content;
+    }
+
+    .history-timestamp {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
     .empty-state {
       color: var(--muted);
       padding: 20px 0 4px;
@@ -906,6 +1028,68 @@
       letter-spacing: -0.015em;
     }
 
+    .stats-grid-compact {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .stats-row-table {
+      display: grid;
+      gap: 0;
+      border: 1px solid rgba(31, 41, 51, 0.10);
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(255, 253, 249, 0.60);
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: minmax(130px, 1.4fr) repeat(auto-fit, minmax(70px, 0.6fr));
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-top: 1px solid rgba(31, 41, 51, 0.08);
+      font-size: 0.92rem;
+    }
+
+    .stats-row:first-child { border-top: 0; }
+
+    .stats-row-header {
+      background: rgba(239, 231, 219, 0.50);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 820;
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
+    }
+
+    .stats-row-label {
+      color: var(--text);
+      font-weight: 760;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .stats-row-value {
+      color: var(--muted);
+      font-weight: 760;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.25;
+    }
+
+    .compact-chart-block {
+      display: grid;
+      gap: 12px;
+    }
+
+    .compact-empty {
+      margin: 0;
+      padding: 12px;
+    }
+
+    .stats-unlock-note {
+      margin: 12px 0 0;
+    }
+
     .bar-meter {
       margin-top: 10px;
       height: 8px;
@@ -962,6 +1146,45 @@
       letter-spacing: -0.04em;
     }
 
+    .win-rate-chart .chart-title,
+    .win-rate-chart .chart-headline {
+      font-size: clamp(1.18rem, 2.8vw, 1.38rem);
+      line-height: 1.16;
+      letter-spacing: -0.03em;
+    }
+
+    .win-rate-chart .chart-headline {
+      color: var(--text);
+      font-weight: 840;
+      text-align: right;
+    }
+
+    .chart-context-note,
+    .chart-completed-note,
+    .chart-axis-context {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.32;
+    }
+
+    .chart-context-note {
+      margin: 4px 0 0;
+    }
+
+    .chart-completed-note {
+      margin: 6px 0 0;
+      font-weight: 650;
+    }
+
+    .chart-axis-context {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 34px;
+      margin-top: -4px;
+      font-weight: 720;
+    }
+
     .chart-svg {
       width: 100%;
       height: auto;
@@ -976,8 +1199,8 @@
 
     .chart-axis-label {
       fill: var(--muted);
-      font-size: 10px;
-      font-weight: 700;
+      font-size: 8px;
+      font-weight: 680;
     }
 
     .chart-line {
@@ -1062,6 +1285,85 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 12px;
+    }
+
+
+    .win-rate-chart .chart-line {
+      stroke: var(--text);
+    }
+
+    .win-rate-chart .chart-point {
+      stroke: var(--text);
+    }
+
+    .win-rate-chart .chart-point-latest {
+      fill: var(--text);
+      stroke: var(--panel);
+    }
+
+    .chart-point-hit {
+      fill: transparent;
+      stroke: transparent;
+      pointer-events: all;
+    }
+
+    .chart-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0 0;
+    }
+
+    .chart-toggle,
+    .chart-intervals {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .chart-control-button {
+      border: 1px solid rgba(31, 41, 51, 0.14);
+      border-radius: 999px;
+      background: rgba(255, 253, 249, 0.72);
+      color: var(--muted);
+      padding: 6px 9px;
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 780;
+      cursor: pointer;
+    }
+
+    .chart-control-button.active {
+      background: var(--text);
+      color: var(--panel);
+      border-color: var(--text);
+    }
+
+    .chart-control-button:focus-visible {
+      outline: 3px solid rgba(194, 65, 63, 0.22);
+      outline-offset: 2px;
+    }
+
+
+    @media (max-width: 640px) {
+      .chart-header {
+        align-items: flex-start;
+      }
+      .win-rate-chart .chart-header {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .win-rate-chart .chart-headline {
+        text-align: left;
+      }
+      .chart-controls {
+        justify-content: flex-start;
+      }
+      .chart-control-button {
+        padding: 6px 8px;
+      }
     }
 
 
@@ -1374,6 +1676,13 @@
       letter-spacing: 0.01em;
     }
 
+    .analysis-section h2.page-title {
+      font-size: clamp(1.36rem, 2.6vw, 1.72rem);
+      line-height: 1.14;
+      letter-spacing: -0.035em;
+      font-weight: 860;
+    }
+
     .analysis-summary-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -1500,6 +1809,7 @@
       .history-card { grid-template-columns: 1fr; }
       .priority-card { grid-template-columns: 1fr; }
       .history-card .action-row { margin-top: 0; }
+      .history-action { justify-content: space-between; width: 100%; }
       .detail-extra-grid { grid-template-columns: 1fr; }
       .paste-panel { max-width: none; }
     }
@@ -1511,17 +1821,527 @@
       .brand-mark { width: 30px; height: 30px; border-radius: 10px; }
       h1 { font-size: 1.02rem; }
       .panel { padding: 16px; border-radius: 16px; }
-      textarea { min-height: 150px; }
-      #sgfInput { min-height: 138px; }
+      .add-game-shell {
+        min-height: max(500px, calc(100dvh - 125px));
+        padding-bottom: calc(54px + env(safe-area-inset-bottom, 0px));
+      }
+      .add-game-shell.is-previewing { min-height: 0; padding-bottom: 0; }
+      .paste-panel { width: min(100%, 340px); max-width: 340px; min-height: min(410px, calc(100dvh - 170px)); }
+      .paste-landing { padding: 20px 18px; gap: 14px; }
+      .landing-title { margin-bottom: 16px; }
+      textarea { min-height: 140px; }
+      .sgf-input-wrap { width: min(100%, 292px); }
+      #sgfInput { min-height: 124px; }
+      .save-upload-row .primary-button { min-width: 170px; min-height: 42px; height: 42px; }
       .menu-button, button, .file-button { padding: 9px 12px; }
       #boardContainer, #detailBoardContainer { min-width: min(226px, 100%); }
       .result-headline { font-size: 2rem; }
       .profile-grid { grid-template-columns: 1fr; }
       .tag-input-row { flex-direction: column; align-items: stretch; }
       .storage-status-grid { grid-template-columns: 1fr; }
+      input,
+      textarea,
+      select,
+      button,
+      .file-button {
+        font-size: 16px;
+      }
+      button,
+      .compact-button,
+      .secondary-button,
+      .primary-button,
+      .history-filter,
+      .file-button {
+        min-height: 44px;
+      }
+      .menu-button {
+        min-height: 44px;
+        min-width: 44px;
+      }
+      .save-upload-row .primary-button {
+        min-height: 44px;
+        height: 44px;
+      }
+      .upload-plus-button {
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        min-height: 44px;
+        border-radius: 50%;
+      }
+      .menu-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 38;
+        background: rgba(24, 33, 47, 0.34);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+      }
+      .menu-backdrop.open {
+        display: block;
+      }
+      .menu-panel {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: max(10px, env(safe-area-inset-bottom));
+        top: auto;
+        width: auto;
+        min-width: 0;
+        max-height: min(78dvh, 460px);
+        padding: 10px;
+        border-radius: 22px;
+        z-index: 45;
+        box-shadow: 0 28px 70px rgba(24, 33, 47, 0.28);
+      }
+      .menu-panel.open {
+        display: grid;
+        gap: 6px;
+      }
+      .menu-item {
+        min-height: 48px;
+        width: 100%;
+        justify-content: flex-start;
+        padding: 13px 15px;
+        font-size: 1rem;
+        border-radius: 15px;
+      }
+    }
+
+
+    /* Mobile-first polish: keep phone layouts intentional without changing app logic. */
+    @media (max-width: 640px) {
+      html,
+      body {
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
+      .app-shell {
+        width: 100%;
+        max-width: 100%;
+        padding-top: max(18px, env(safe-area-inset-top, 0px));
+        padding-right: max(14px, env(safe-area-inset-right, 0px));
+        padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+        padding-left: max(14px, env(safe-area-inset-left, 0px));
+      }
+
+      header,
+      main,
+      main > section,
+      .panel,
+      .chart-card,
+      .stats-section,
+      .stats-collapse,
+      .analysis-section,
+      .detail-mini-panel,
+      .history-card,
+      .priority-card,
+      .review-guide-card,
+      .empty-card,
+      .shortcut-help-card {
+        max-width: 100%;
+        min-width: 0;
+      }
+
+      main,
+      main > section {
+        overflow-x: clip;
+      }
+
+      header {
+        width: 100%;
+        margin-bottom: 18px;
+      }
+
+      .page-title,
+      .landing-title,
+      .history-panel > h2,
+      .stats-panel > h2,
+      .analysis-panel > h2,
+      .backup-panel > h2,
+      .analysis-section h2.page-title {
+        font-size: clamp(1.58rem, 6vw, 2rem);
+        line-height: 1.1;
+        margin-bottom: 16px;
+      }
+
+      .panel {
+        padding: 16px;
+        border-radius: 16px;
+      }
+
+      .add-game-shell {
+        min-height: max(500px, calc(100dvh - 112px));
+        padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .add-game-shell.is-previewing {
+        min-height: 0;
+        padding-bottom: 0;
+      }
+
+      .paste-panel {
+        width: min(100%, 342px);
+        max-width: 342px;
+      }
+
+      .paste-landing {
+        padding: 20px 18px;
+      }
+
+      .sgf-input-wrap {
+        width: min(100%, 292px);
+      }
+
+      input,
+      textarea,
+      select,
+      button,
+      .file-button {
+        font-size: 16px;
+      }
+
+      input:not([type="range"]),
+      textarea,
+      select {
+        min-width: 0;
+      }
+
+      button,
+      .compact-button,
+      .secondary-button,
+      .primary-button,
+      .history-filter,
+      .chart-control-button,
+      .file-button,
+      .stats-collapse summary,
+      .shortcut-help-card summary,
+      .replay-checklist summary,
+      .library-toggle {
+        min-height: 44px;
+      }
+
+      .menu-button {
+        min-width: 44px;
+        min-height: 44px;
+      }
+
+      .menu-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 38;
+        background: rgba(24, 33, 47, 0.34);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+      }
+
+      .menu-backdrop.open {
+        display: block;
+      }
+
+      .menu-panel {
+        position: fixed;
+        left: max(10px, env(safe-area-inset-left, 0px));
+        right: max(10px, env(safe-area-inset-right, 0px));
+        bottom: max(10px, env(safe-area-inset-bottom, 0px));
+        top: auto;
+        width: auto;
+        min-width: 0;
+        max-height: min(78dvh, 460px);
+        padding: 10px;
+        border-radius: 22px;
+        z-index: 45;
+        overflow-y: auto;
+        box-shadow: 0 28px 70px rgba(24, 33, 47, 0.28);
+      }
+
+      .menu-panel.open {
+        display: grid;
+        gap: 6px;
+      }
+
+      .menu-item {
+        min-height: 48px;
+        width: 100%;
+        justify-content: flex-start;
+        padding: 13px 15px;
+        font-size: 1rem;
+        border-radius: 15px;
+      }
+
+      .save-upload-row {
+        align-items: stretch;
+        justify-content: center;
+      }
+
+      .save-upload-row .primary-button {
+        min-width: 176px;
+        min-height: 44px;
+        height: 44px;
+      }
+
+      .upload-plus-button {
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        min-height: 44px;
+        border-radius: 50%;
+      }
+
+      .preview-layout,
+      .detail-layout,
+      .chart-grid-two,
+      .detail-extra-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      #boardContainer,
+      #detailBoardContainer {
+        width: min(100%, calc(100vw - 48px));
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .board-frame,
+      .go-board {
+        width: 100%;
+        max-width: 100%;
+        aspect-ratio: 1 / 1;
+      }
+
+      .coord-label {
+        font-size: clamp(0.58rem, 2.4vw, 0.72rem);
+      }
+
+      .chart-card {
+        padding: 13px;
+        overflow: hidden;
+      }
+
+      .chart-svg {
+        max-width: 100%;
+      }
+
+      .chart-header,
+      .win-rate-chart .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .chart-headline,
+      .win-rate-chart .chart-headline {
+        text-align: left;
+      }
+
+      .chart-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .chart-row-track {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .chart-controls,
+      .chart-intervals,
+      .chart-toggle {
+        justify-content: flex-start;
+        gap: 8px;
+      }
+
+      .chart-control-button {
+        padding: 10px 12px;
+      }
+
+      .history-filters {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        max-width: 100%;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+      }
+
+      .history-filter {
+        flex: 0 0 auto;
+        padding: 9px 12px;
+      }
+
+      .history-card {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        gap: 12px;
+        padding: 13px;
+      }
+
+      .history-action {
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .history-action .compact-button {
+        min-height: 44px;
+      }
+
+      .history-timestamp {
+        white-space: normal;
+      }
+
+      .stats-layout,
+      .analysis-layout,
+      .review-guide-list,
+      .priority-list,
+      .history-list {
+        gap: 14px;
+      }
+
+      .stats-grid,
+      .stats-grid.core,
+      .stats-grid-compact,
+      .analysis-summary-grid,
+      .profile-grid,
+      .storage-status-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+        padding: 10px 12px;
+      }
+
+      .stats-row-header {
+        display: none;
+      }
+
+      .stats-row-label,
+      .stats-row-value,
+      .stat-value,
+      .analysis-value,
+      .opening-line,
+      .storage-status-value,
+      .chart-row-label,
+      .chart-row-value {
+        overflow-wrap: anywhere;
+        word-break: normal;
+      }
+
+      .fact-grid {
+        grid-template-columns: minmax(96px, 0.8fr) minmax(0, 1fr);
+      }
+
+      .summary-row {
+        gap: 10px;
+      }
+
+      .detail-card .action-row,
+      .utility-area .action-row {
+        align-items: stretch;
+        justify-content: center;
+      }
+
+      .utility-area button,
+      .utility-area .file-button {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .replay-slider {
+        min-height: 44px;
+      }
+
+      .tag-input-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .tag-input-row input {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .add-support-note {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .app-shell {
+        padding-right: max(12px, env(safe-area-inset-right, 0px));
+        padding-left: max(12px, env(safe-area-inset-left, 0px));
+      }
+
+      .page-title,
+      .landing-title,
+      .history-panel > h2,
+      .stats-panel > h2,
+      .analysis-panel > h2,
+      .backup-panel > h2,
+      .analysis-section h2.page-title {
+        font-size: clamp(1.5rem, 7vw, 1.9rem);
+        margin-bottom: 14px;
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      .paste-panel {
+        width: min(100%, 334px);
+      }
+
+      .fact-grid {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+
+      .summary-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .summary-row strong {
+        text-align: left;
+      }
+
+      .history-main {
+        font-size: 0.98rem;
+      }
+
+      .detail-card .action-row button,
+      .utility-area button,
+      .utility-area .file-button {
+        flex: 1 1 100%;
+      }
     }
 
     .hidden { display: none !important; }
+
+
+    @media (max-height: 620px) {
+      .add-game-shell {
+        min-height: auto;
+        justify-content: flex-start;
+        padding-bottom: 0;
+      }
+      .add-support-note {
+        position: static;
+        margin-top: 22px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      }
+      .paste-panel {
+        min-height: auto;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1529,7 +2349,7 @@
     <header>
       <button id="brandHomeButton" class="brand" type="button" aria-label="Go to Add Game">
         <span class="brand-mark" aria-hidden="true"></span>
-        <h1>9×9 GO Tracker</h1>
+        <h1>GO Tracker</h1>
       </button>
       <div class="menu-wrap">
         <button id="menuButton" class="menu-button" type="button" aria-expanded="false" aria-controls="menuPanel">
@@ -1543,6 +2363,7 @@
           <button class="menu-item" type="button" role="menuitem" data-tab="analysis">Analysis</button>
           <button class="menu-item" type="button" role="menuitem" data-tab="backup">Backup / Export</button>
         </div>
+        <div id="menuBackdrop" class="menu-backdrop" hidden></div>
       </div>
     </header>
 
@@ -1550,14 +2371,20 @@
 
     <main>
       <section id="tab-add" class="active">
-        <div id="pastePanel" class="panel paste-panel paste-landing">
-          <h2 class="landing-title">Add Game</h2>
-          <textarea id="sgfInput" aria-label="Paste SGF game" spellcheck="false" autocomplete="off" placeholder="Paste game here..."></textarea>
-          <div class="action-row paste-action-row">
-            <button id="parseButton" class="primary-button">Preview &amp; Save Game</button>
-            <button id="clipboardImportButton" class="secondary-button" type="button">Import from Clipboard</button>
+        <div id="addGameShell" class="add-game-shell">
+          <div id="pastePanel" class="panel paste-panel paste-landing">
+            <h2 class="landing-title page-title">Add 9x9 GO Game:</h2>
+            <div id="sgfInputWrap" class="sgf-input-wrap">
+              <textarea id="sgfInput" aria-label="Paste SGF game" spellcheck="false" autocomplete="off" placeholder="Input here"></textarea>
+              <span class="sgf-placeholder-overlay" aria-hidden="true">Input here</span>
+            </div>
+            <div class="action-row paste-action-row save-upload-row">
+              <button id="parseButton" class="primary-button">Save Game</button>
+              <button id="sgfFileButton" class="secondary-button upload-plus-button" type="button" aria-label="Upload SGF file">+</button>
+              <input id="sgfFileInput" class="hidden-file-input" type="file" accept=".sgf,application/x-go-sgf,text/plain" multiple hidden>
+            </div>
           </div>
-          <p class="add-flow-note">Valid games are saved automatically after preview.</p>
+          <p class="add-support-note">Supports 9x9 SGF GO Files</p>
         </div>
 
         <div id="addMessage" class="message" role="status"></div>
@@ -1582,28 +2409,28 @@
 
       <section id="tab-history">
         <div class="panel history-panel">
-          <h2>History</h2>
+          <h2 class="page-title">History</h2>
           <div id="historyContent"></div>
         </div>
       </section>
 
       <section id="tab-stats">
         <div class="panel stats-panel">
-          <h2>Stats</h2>
+          <h2 class="page-title">Stats</h2>
           <div id="statsContent"></div>
         </div>
       </section>
 
       <section id="tab-analysis">
         <div class="panel analysis-panel">
-          <h2>Analysis</h2>
+          <h2 class="page-title">Analysis</h2>
           <div id="analysisContent"></div>
         </div>
       </section>
 
       <section id="tab-backup">
         <div class="panel backup-panel">
-          <h2>Backup &amp; Export</h2>
+          <h2 class="page-title">Backup &amp; Export</h2>
           <div id="storageStatus" class="storage-status" aria-live="polite">
             <div class="storage-status-grid">
               <div class="storage-status-item"><span class="storage-status-label">Storage</span><span class="storage-status-value">Local browser storage</span></div>
@@ -1627,7 +2454,7 @@
               <ol>
                 <li>In GoQuest, tap <strong>Share the game</strong>.</li>
                 <li>Tap <strong>Copy</strong>, or use an iOS Shortcut that passes the shared text to this app.</li>
-                <li>Open the tracker and tap <strong>Import from Clipboard</strong>.</li>
+                <li>Open the tracker and paste into <strong>Input here</strong>.</li>
               </ol>
               <p><strong>Advanced:</strong> create an iOS Shortcut that accepts Share Sheet input and opens this tracker URL with <code>?sgf=[URL-encoded shared text]</code>.</p>
             </details>
@@ -3074,7 +3901,7 @@
         if (openingsToReview.length) suggestions.push("Compare repeated opening patterns associated with losses in your saved games.");
         if (blackWinRateNum !== null && whiteWinRateNum !== null && Math.abs(blackWinRateNum - whiteWinRateNum) >= 0.15) suggestions.push(`Compare Black and White games because ${blackWinRateNum < whiteWinRateNum ? "Black" : "White"} currently has the lower win rate.`);
         if (upsetLosses.length) suggestions.push("Review losses against lower-rated opponents for repeated preventable patterns.");
-        if (!suggestions.length) suggestions.push("Save more games before treating these as patterns. For now, use Review Priorities to pick games to replay.");
+        if (!suggestions.length) suggestions.push("More games needed.");
 
         const replayReviewItems = [];
         const seenReplayGuide = new Set();
@@ -3604,6 +4431,7 @@
         brandHomeButton: document.getElementById("brandHomeButton"),
         menuButton: document.getElementById("menuButton"),
         menuPanel: document.getElementById("menuPanel"),
+        menuBackdrop: document.getElementById("menuBackdrop"),
         utilityArea: document.getElementById("utilityArea"),
         storageStatus: document.getElementById("storageStatus"),
         sections: {
@@ -3613,10 +4441,14 @@
           analysis: document.getElementById("tab-analysis"),
           backup: document.getElementById("tab-backup")
         },
+        addGameShell: document.getElementById("addGameShell"),
         pastePanel: document.getElementById("pastePanel"),
+        sgfInputWrap: document.getElementById("sgfInputWrap"),
         sgfInput: document.getElementById("sgfInput"),
         parseButton: document.getElementById("parseButton"),
         clipboardImportButton: document.getElementById("clipboardImportButton"),
+        sgfFileButton: document.getElementById("sgfFileButton"),
+        sgfFileInput: document.getElementById("sgfFileInput"),
         addMessage: document.getElementById("addMessage"),
         previewArea: document.getElementById("previewArea"),
         previewFacts: document.getElementById("previewFacts"),
@@ -3636,7 +4468,12 @@
 
       let currentDraft = null;
       let detailReplay = null;
+      let analysisGuideOpen = false;
       let historyFilter = "all";
+      let historyChartMode = "rolling";
+      let historyChartInterval = null;
+      let lastPasteAutoSaveText = "";
+      let pasteAutoSaveTimer = null;
       const LAST_BACKUP_KEY = "go9TrackerLastBackupAt";
 
       function showMessage(target, type, text) {
@@ -3647,6 +4484,14 @@
       function clearMessage(target) {
         target.className = "message";
         target.textContent = "";
+      }
+
+      function updateSgfPlaceholderState() {
+        if (!els.sgfInput || !els.sgfInputWrap) return;
+        const hasValue = String(els.sgfInput.value || "").length > 0;
+        const isFocused = document.activeElement === els.sgfInput;
+        els.sgfInputWrap.classList.toggle("has-value", hasValue);
+        els.sgfInputWrap.classList.toggle("is-focused", isFocused);
       }
 
       const SHARE_IMPORT_PARAMS = ["sgf", "game", "import"];
@@ -3690,6 +4535,8 @@
           return { loaded: false, previewed: false, reason: "not-sgf" };
         }
         els.sgfInput.value = value;
+        updateSgfPlaceholderState();
+        if (els.addGameShell) els.addGameShell.classList.remove("is-previewing");
         const parseResult = await handleParse({
           autoSave: options.autoSave === true,
           keepPastePanel: options.autoSave !== true,
@@ -3718,7 +4565,7 @@
           cleanUrl: true,
           autoSave: false,
           invalidMessage: "Shared text does not look like an SGF game.",
-          successMessage: "Shared game loaded. Review the preview, then tap Preview & Save Game to save it."
+          successMessage: "Shared game loaded. Review the preview, then tap Save Game to save it."
         });
         return { found: true, key: shared.key, ...result };
       }
@@ -3749,6 +4596,110 @@
           showMessage(els.addMessage, "error", "Clipboard access was blocked. Paste the game manually.");
           return { ok: false, reason: "blocked" };
         }
+      }
+
+      function readSgfFileText(file) {
+        if (!file) return Promise.resolve("");
+        if (typeof file.text === "function") return file.text();
+        return new Promise((resolve, reject) => {
+          try {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ""));
+            reader.onerror = () => reject(reader.error || new Error("Could not read SGF file."));
+            reader.readAsText(file);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      function showUploadSummary(summary) {
+        const imported = Number.isFinite(summary && summary.imported) ? summary.imported : 0;
+        const duplicates = Number.isFinite(summary && summary.duplicates) ? summary.duplicates : 0;
+        const failed = Number.isFinite(summary && summary.failed) ? summary.failed : 0;
+        showMessage(
+          els.addMessage,
+          imported > 0 ? "success" : "info",
+          `Imported ${imported} games. Skipped ${duplicates} duplicates. ${failed} files could not be parsed.\nValid games are saved automatically. Duplicates are skipped.`
+        );
+      }
+
+      async function handleSgfFileImport(filesLike) {
+        const files = Array.from(filesLike || []).filter(Boolean);
+        const summary = { imported: 0, duplicates: 0, failed: 0 };
+        if (!files.length) return summary;
+        clearMessage(els.addMessage);
+        currentDraft = null;
+        if (!GoStorage) {
+          showMessage(els.addMessage, "error", "IndexedDB is not available in this browser.");
+          return { ...summary, storageUnavailable: true };
+        }
+        let lastImportedDraft = null;
+        for (const file of files) {
+          try {
+            const text = await readSgfFileText(file);
+            const draft = await GoCore.createGameDraft(text);
+            if (await GoStorage.gameExists(draft)) {
+              summary.duplicates += 1;
+              continue;
+            }
+            await GoStorage.addGame(draft);
+            summary.imported += 1;
+            lastImportedDraft = draft;
+          } catch (error) {
+            const message = error && error.message ? String(error.message) : "";
+            if (/already saved/i.test(message) || (error && error.name === "ConstraintError")) summary.duplicates += 1;
+            else summary.failed += 1;
+          }
+        }
+        if (lastImportedDraft) {
+          currentDraft = lastImportedDraft;
+          els.sgfInput.value = lastImportedDraft.originalSgf || "";
+          els.pastePanel.classList.add("collapsed");
+          if (els.addGameShell) els.addGameShell.classList.add("is-previewing");
+          renderPreview(lastImportedDraft);
+          await renderHistory();
+          await renderStats();
+          await renderAnalysis();
+        }
+        showUploadSummary(summary);
+        return summary;
+      }
+
+      async function handleSgfFileInputChange(event) {
+        const input = event && event.target ? event.target : els.sgfFileInput;
+        try {
+          return await handleSgfFileImport(input && input.files ? input.files : []);
+        } finally {
+          if (input) input.value = "";
+        }
+      }
+
+      async function handlePastedSgfAutoSave(pastedText = "") {
+        const value = String(pastedText || els.sgfInput.value || "").trim();
+        if (!value) return { attempted: false, reason: "empty" };
+        if (value === lastPasteAutoSaveText) return { attempted: false, reason: "same-paste" };
+        lastPasteAutoSaveText = value;
+        if (!looksLikeSgfText(value)) {
+          currentDraft = null;
+          els.previewArea.classList.add("hidden");
+          showMessage(els.addMessage, "error", "Pasted text does not look like an SGF game.");
+          return { attempted: true, parsed: false, reason: "not-sgf" };
+        }
+        els.sgfInput.value = value;
+        updateSgfPlaceholderState();
+        return handleParse({ autoSave: true, successMessage: "Game saved to History." });
+      }
+
+      function handleSgfPaste(event) {
+        const pasted = event && event.clipboardData && typeof event.clipboardData.getData === "function"
+          ? event.clipboardData.getData("text/plain")
+          : "";
+        if (pasteAutoSaveTimer) window.clearTimeout(pasteAutoSaveTimer);
+        pasteAutoSaveTimer = window.setTimeout(() => {
+          const value = String(pasted || els.sgfInput.value || "").trim();
+          handlePastedSgfAutoSave(value);
+        }, 80);
       }
 
       function readLastBackupAt() {
@@ -3895,6 +4846,12 @@
         return `${n.toFixed(1)}%`;
       }
 
+      function formatChartPercentShort(value) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return "—";
+        return Number.isInteger(n) ? `${n.toFixed(0)}%` : `${n.toFixed(1)}%`;
+      }
+
       function resultPointValue(game) {
         if (!game || game.userResult === "Unknown" || game.userResult === "Void") return null;
         if (game.userResult === "Win") return 1;
@@ -3903,32 +4860,160 @@
         return null;
       }
 
-      function buildWinRateTrendData(gamesInput) {
-        const games = orderedGames(gamesInput);
-        let score = 0;
-        let included = 0;
-        const points = [];
-        games.forEach((game, index) => {
+      function resultCodeForGame(game) {
+        const value = resultPointValue(game);
+        if (value === 1) return "W";
+        if (value === 0) return "L";
+        if (value === 0.5) return "D";
+        return "";
+      }
+
+      function knownResultGames(gamesInput) {
+        const rows = [];
+        orderedGames(gamesInput).forEach((game, index) => {
           const value = resultPointValue(game);
           if (value === null) return;
-          included += 1;
-          score += value;
-          const cumulativeRate = included ? (score / included) * 100 : 0;
-          points.push({
-            gameNumber: index + 1,
-            includedGameNumber: included,
-            cumulativeRate,
-            result: game.userResult || "Unknown",
-            color: game.userColor || "Unknown",
-            moveCount: finiteNumber(game.moveCount, 0)
+          rows.push({
+            ...game,
+            chartValue: value,
+            resultCode: resultCodeForGame(game),
+            originalGameNumber: index + 1,
+            knownGameNumber: rows.length + 1
           });
         });
+        return rows;
+      }
+
+      function availableWinRateIntervals(knownCount) {
+        if (knownCount < 15) return [];
+        const intervals = [];
+        if (knownCount >= 25) intervals.push({ key: "25", label: "Last 25", count: 25 });
+        if (knownCount >= 50) intervals.push({ key: "50", label: "Last 50", count: 50 });
+        intervals.push({ key: "all", label: "All time", count: knownCount });
+        return intervals;
+      }
+
+      function defaultWinRateIntervalKey(knownCount) {
+        if (knownCount >= 50) return "50";
+        if (knownCount >= 25) return "25";
+        if (knownCount >= 15) return "all";
+        return "";
+      }
+
+      function resolveWinRateInterval(knownCount, requested) {
+        const intervals = availableWinRateIntervals(knownCount);
+        if (!intervals.length) return { key: "", label: "", count: 0, intervals };
+        const requestedKey = String(requested || defaultWinRateIntervalKey(knownCount));
+        const found = intervals.find(item => item.key === requestedKey) || intervals.find(item => item.key === defaultWinRateIntervalKey(knownCount)) || intervals[0];
+        return { ...found, intervals };
+      }
+
+      function computeDynamicYAxis(valuesInput) {
+        const values = (Array.isArray(valuesInput) ? valuesInput : []).map(Number).filter(Number.isFinite).map(value => Math.max(0, Math.min(100, value)));
+        if (!values.length) return { min: 0, max: 100, mid: 50, labels: [100, 50, 0] };
+        const rawMin = Math.min(...values);
+        const rawMax = Math.max(...values);
+        const rawRange = rawMax - rawMin;
+        let min = rawMin - Math.max(5, rawRange * 0.15);
+        let max = rawMax + Math.max(5, rawRange * 0.15);
+        if (max - min < 20) {
+          const mid = (rawMin + rawMax) / 2;
+          min = mid - 10;
+          max = mid + 10;
+        }
+        min = Math.floor(min / 5) * 5;
+        max = Math.ceil(max / 5) * 5;
+        min = Math.max(0, min);
+        max = Math.min(100, max);
+        if (max - min < 20) {
+          if (min <= 0) max = Math.min(100, min + 20);
+          else if (max >= 100) min = Math.max(0, max - 20);
+          else {
+            const mid = (min + max) / 2;
+            min = Math.max(0, Math.floor((mid - 10) / 5) * 5);
+            max = Math.min(100, Math.ceil((mid + 10) / 5) * 5);
+          }
+        }
+        const mid = Math.round(((min + max) / 2) / 5) * 5;
+        return { min, max, mid, labels: [max, mid, min] };
+      }
+
+      function buildWinRateTrendData(gamesInput, options = {}) {
+        const allGames = orderedGames(gamesInput);
+        const known = knownResultGames(gamesInput);
+        const knownCount = known.length;
+        const interval = resolveWinRateInterval(knownCount, options.interval || historyChartInterval);
+        const mode = "rolling15";
+        const chartVisible = knownCount >= 15;
+        if (!chartVisible) {
+          return {
+            chartVisible: false,
+            mode,
+            intervalKey: interval.key,
+            intervalLabel: interval.label,
+            availableIntervals: interval.intervals,
+            points: [],
+            resultStrip: [],
+            visibleKnownGames: 0,
+            includedGames: knownCount,
+            knownGames: knownCount,
+            totalGames: allGames.length,
+            skippedGames: allGames.length - knownCount,
+            latestRate: null,
+            yAxis: computeDynamicYAxis([]),
+            drawRule: "Draws count as 0.5. Unknown results are skipped."
+          };
+        }
+
+        const visibleCount = interval.key === "all" ? knownCount : Math.min(interval.count, knownCount);
+        const visibleStartIndex = Math.max(0, knownCount - visibleCount);
+        const visibleRows = known.slice(visibleStartIndex);
+        const visibleKnownNumbers = new Set(visibleRows.map(row => row.knownGameNumber));
+        let points = [];
+
+        points = known.map((game, index) => {
+          if (index < 14) return null;
+          const windowRows = known.slice(index - 14, index + 1);
+          const score = windowRows.reduce((sum, row) => sum + row.chartValue, 0);
+          const winRate = (score / 15) * 100;
+          return {
+            gameNumber: game.originalGameNumber,
+            includedGameNumber: game.knownGameNumber,
+            visiblePointNumber: index + 1,
+            winRate,
+            cumulativeRate: winRate,
+            result: game.userResult || "Unknown",
+            resultCode: game.resultCode,
+            mode: "Rolling 15",
+            color: game.userColor || "Unknown",
+            moveCount: finiteNumber(game.moveCount, 0)
+          };
+        }).filter(Boolean).filter(point => visibleKnownNumbers.has(point.includedGameNumber));
+
+        const latestRate = points.length ? points[points.length - 1].winRate : null;
+        const yAxis = computeDynamicYAxis(points.map(point => point.winRate));
+        const resultStrip = visibleRows.map(game => ({
+          code: game.resultCode,
+          result: game.userResult || "Unknown",
+          gameNumber: game.originalGameNumber,
+          knownGameNumber: game.knownGameNumber
+        }));
+
         return {
+          chartVisible: true,
+          mode,
+          intervalKey: interval.key,
+          intervalLabel: interval.label,
+          availableIntervals: interval.intervals,
           points,
-          includedGames: included,
-          totalGames: games.length,
-          skippedGames: games.length - included,
-          latestRate: points.length ? points[points.length - 1].cumulativeRate : null,
+          resultStrip,
+          visibleKnownGames: visibleRows.length,
+          includedGames: knownCount,
+          knownGames: knownCount,
+          totalGames: allGames.length,
+          skippedGames: allGames.length - knownCount,
+          latestRate,
+          yAxis,
           drawRule: "Draws count as 0.5. Unknown results are skipped."
         };
       }
@@ -3947,49 +5032,66 @@
         return total > 0 ? (value / total) * 100 : 0;
       }
 
+      function statsKnownGames(gamesInput) {
+        return orderedGames(gamesInput).filter(g => ["Win", "Loss", "Draw"].includes(g.userResult));
+      }
+
+      function resultScoreValue(result) {
+        if (result === "Win") return 1;
+        if (result === "Draw") return 0.5;
+        if (result === "Loss") return 0;
+        return null;
+      }
+
       function buildResultsBreakdownData(gamesInput) {
-        const games = orderedGames(gamesInput);
+        const games = statsKnownGames(gamesInput);
         const total = games.length;
         const count = result => games.filter(g => g.userResult === result).length;
-        const unknown = games.filter(g => !["Win", "Loss", "Draw"].includes(g.userResult)).length;
         return [
           { label: "Wins", value: count("Win"), percentage: pct(count("Win"), total) },
           { label: "Losses", value: count("Loss"), percentage: pct(count("Loss"), total) },
-          { label: "Draws", value: count("Draw"), percentage: pct(count("Draw"), total) },
-          { label: "Unknown", value: unknown, percentage: pct(unknown, total) }
+          { label: "Draws", value: count("Draw"), percentage: pct(count("Draw"), total) }
         ];
       }
 
       function buildColorPerformanceChartData(gamesInput) {
-        const games = orderedGames(gamesInput);
+        const games = statsKnownGames(gamesInput);
         return ["Black", "White"].map(color => {
-          const rows = games.filter(g => g.userColor === color && (g.userResult === "Win" || g.userResult === "Loss"));
+          const rows = games.filter(g => g.userColor === color);
           const wins = rows.filter(g => g.userResult === "Win").length;
+          const losses = rows.filter(g => g.userResult === "Loss").length;
+          const draws = rows.filter(g => g.userResult === "Draw").length;
+          const score = rows.reduce((sum, game) => sum + finiteNumber(resultScoreValue(game.userResult), 0), 0);
           return {
             label: color,
-            value: rows.length ? (wins / rows.length) * 100 : 0,
-            percentage: rows.length ? (wins / rows.length) * 100 : 0,
+            value: rows.length ? (score / rows.length) * 100 : 0,
+            percentage: rows.length ? (score / rows.length) * 100 : 0,
             count: rows.length,
-            note: rows.length && rows.length < 3 ? "small sample" : `${wins}-${rows.length - wins}`
+            record: `${wins}–${losses}–${draws}`,
+            note: rows.length && rows.length < 5 ? "small sample" : `${wins}–${losses}–${draws}`
           };
         });
       }
 
       function buildResultMethodBreakdownData(gamesInput) {
-        const games = orderedGames(gamesInput);
+        const games = statsKnownGames(gamesInput);
         const total = games.length;
         const methods = [
           ["score", "Score"],
           ["resignation", "Resignation"],
           ["time", "Timeout"],
           ["forfeit", "Forfeit"],
-          ["draw", "Draw"],
-          ["unknown", "Unknown"]
+          ["draw", "Draw"]
         ];
-        return methods.map(([key, label]) => {
-          const value = games.filter(g => (g.resultMethod || "unknown") === key || (key === "time" && g.resultMethod === "timeout")).length;
+        const rows = methods.map(([key, label]) => {
+          const value = games.filter(g => (g.resultMethod || "") === key || (key === "time" && g.resultMethod === "timeout") || (key === "draw" && g.userResult === "Draw")).length;
           return { label, value, percentage: pct(value, total) };
         });
+        const knownMethodCount = rows.reduce((sum, row) => sum + row.value, 0);
+        const other = Math.max(0, total - knownMethodCount);
+        const visible = rows.filter(row => row.label === "Score" || row.label === "Resignation" || row.value > 0);
+        if (other > 0) visible.push({ label: "Other", value: other, percentage: pct(other, total) });
+        return visible;
       }
 
       function buildCaptureDifferentialBuckets(gamesInput) {
@@ -4119,51 +5221,59 @@
         `;
       }
 
-      function renderWinRateTrendChart(gamesInput) {
-        const trend = buildWinRateTrendData(gamesInput);
-        const headline = trend.latestRate === null ? "—" : formatChartPercent(trend.latestRate);
-        const subtitle = `${trend.includedGames} included · ${trend.drawRule}${trend.skippedGames ? ` · ${trend.skippedGames} unknown skipped` : ""}`;
-        if (trend.points.length < 2) {
-          return `
-            <article class="chart-card win-rate-chart" aria-label="Win Rate Over Time">
-              <div class="chart-header"><div><p class="chart-title">Win Rate Over Time</p><p class="chart-subtitle">${escapeHtml(subtitle)}</p></div><div class="chart-headline">${escapeHtml(headline)}</div></div>
-              ${renderChartEmpty("Save at least 2 games to see a trend.")}
-            </article>
-          `;
-        }
-        const width = 360, height = 160, padX = 28, padY = 22;
+      function renderWinRateTrendChart(gamesInput, options = {}) {
+        const trend = buildWinRateTrendData(gamesInput, {
+          interval: options.interval || historyChartInterval
+        });
+        if (!trend.chartVisible) return "";
+        const headline = trend.latestRate === null ? "—" : formatChartPercentShort(trend.latestRate);
+        const width = 360, height = 164, padX = 34, padY = 22;
         const plotW = width - padX * 2;
         const plotH = height - padY * 2;
+        const axisMin = finiteNumber(trend.yAxis && trend.yAxis.min, 0);
+        const axisMax = finiteNumber(trend.yAxis && trend.yAxis.max, 100);
+        const axisRange = Math.max(1, axisMax - axisMin);
         const coords = trend.points.map((point, i) => {
-          const x = padX + (trend.points.length === 1 ? plotW : (i / (trend.points.length - 1)) * plotW);
-          const y = padY + (1 - point.cumulativeRate / 100) * plotH;
+          const x = padX + (trend.points.length === 1 ? plotW / 2 : (i / (trend.points.length - 1)) * plotW);
+          const y = padY + (1 - ((point.winRate - axisMin) / axisRange)) * plotH;
           return { ...point, x, y };
         });
         const path = coords.map((point, i) => `${i ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" " );
-        const area = `${path} L${coords[coords.length - 1].x.toFixed(1)},${height - padY} L${coords[0].x.toFixed(1)},${height - padY} Z`;
-        const showEveryPoint = coords.length <= 20;
-        const latest = coords[coords.length - 1];
-        const circles = coords.map((point, i) => {
-          if (!showEveryPoint && i !== coords.length - 1) return "";
-          const label = `Game ${point.gameNumber}: ${point.result}, ${formatChartPercent(point.cumulativeRate)}, ${point.color}, ${point.moveCount} moves`;
-          return `<circle class="${i === coords.length - 1 ? "chart-point-latest" : "chart-point"}" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="${i === coords.length - 1 ? 4.2 : 3.2}"><title>${escapeHtml(label)}</title></circle>`;
+        const linePath = coords.length > 1 ? `<path class="chart-line" d="${path}"></path>` : "";
+        const yLabels = (trend.yAxis && Array.isArray(trend.yAxis.labels) ? trend.yAxis.labels : [axisMax, (axisMin + axisMax) / 2, axisMin]).map(Number).filter(Number.isFinite);
+        const gridLines = yLabels.map(label => {
+          const y = padY + (1 - ((label - axisMin) / axisRange)) * plotH;
+          return `
+            <line class="chart-grid-line" x1="${padX}" y1="${y.toFixed(1)}" x2="${width - padX}" y2="${y.toFixed(1)}"></line>
+            <text class="chart-axis-label" x="4" y="${(y + 3).toFixed(1)}">${escapeHtml(formatChartPercent(label).replace(".0%", "%"))}</text>
+          `;
         }).join("");
+        const showEveryPoint = coords.length <= 25;
+        const pointEvery = coords.length > 75 ? Math.ceil(coords.length / 20) : coords.length > 25 ? Math.ceil(coords.length / 25) : 1;
+        const circles = coords.map((point, i) => {
+          if (!showEveryPoint && i !== coords.length - 1 && i % pointEvery !== 0) return "";
+          const label = `${formatChartPercent(point.winRate)} · Game ${point.gameNumber} · Result: ${point.resultCode || "—"} · Mode: ${point.mode}${point.color && point.color !== "Unknown" ? ` · ${point.color}` : ""}${point.moveCount ? ` · ${point.moveCount} moves` : ""}`;
+          const pointClass = i === coords.length - 1 ? "chart-point-latest" : "chart-point";
+          const visibleRadius = i === coords.length - 1 ? 2.8 : 2.2;
+          return `<g class="chart-point-group" tabindex="0" role="img" aria-label="${escapeHtml(label)}"><title>${escapeHtml(label)}</title><circle class="${pointClass}" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="${visibleRadius.toFixed(1)}"></circle><circle class="chart-point-hit" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="10"></circle></g>`;
+        }).join("");
+        const intervalControls = trend.availableIntervals.length > 1
+          ? trend.availableIntervals.map(interval => `<button class="chart-control-button ${trend.intervalKey === interval.key ? "active" : ""}" data-action="history-chart-interval" data-interval="${escapeHtml(interval.key)}" type="button">${escapeHtml(interval.label)}</button>`).join("")
+          : "";
         return `
           <article class="chart-card win-rate-chart" aria-label="Win Rate Over Time">
-            <div class="chart-header"><div><p class="chart-title">Win Rate Over Time</p><p class="chart-subtitle">${escapeHtml(subtitle)}</p></div><div class="chart-headline">${escapeHtml(headline)}</div></div>
-            <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Cumulative win rate over saved games">
-              <line class="chart-grid-line" x1="${padX}" y1="${padY}" x2="${width - padX}" y2="${padY}"></line>
-              <line class="chart-grid-line" x1="${padX}" y1="${padY + plotH / 2}" x2="${width - padX}" y2="${padY + plotH / 2}"></line>
-              <line class="chart-grid-line" x1="${padX}" y1="${height - padY}" x2="${width - padX}" y2="${height - padY}"></line>
-              <text class="chart-axis-label" x="2" y="${padY + 3}">100%</text>
-              <text class="chart-axis-label" x="8" y="${padY + plotH / 2 + 3}">50%</text>
-              <text class="chart-axis-label" x="12" y="${height - padY + 3}">0%</text>
-              <path class="chart-area" d="${area}"></path>
-              <path class="chart-line" d="${path}"></path>
+            <div class="chart-header">
+              <div>
+                <p class="chart-title">Win Rate Over Time</p>
+              </div>
+              <div class="chart-headline">${escapeHtml(headline)}</div>
+            </div>
+            <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Rolling 15-game win rate">
+              ${gridLines}
+              ${linePath}
               ${circles}
-              <text class="chart-latest-label" x="${Math.min(width - 88, latest.x + 8).toFixed(1)}" y="${Math.max(14, latest.y - 8).toFixed(1)}">Latest ${escapeHtml(formatChartPercent(latest.cumulativeRate))}</text>
             </svg>
-            <p class="chart-note">X-axis is saved/import order. Hover or tap visible points for game details.</p>
+            ${intervalControls ? `<div class="chart-controls" aria-label="Win rate chart interval controls"><div class="chart-intervals" aria-label="Chart interval">${intervalControls}</div></div>` : ""}
           </article>
         `;
       }
@@ -4171,6 +5281,10 @@
       function closeMenu() {
         if (!els.menuPanel || !els.menuButton) return;
         els.menuPanel.classList.remove("open");
+        if (els.menuBackdrop) {
+          els.menuBackdrop.classList.remove("open");
+          els.menuBackdrop.hidden = true;
+        }
         els.menuButton.setAttribute("aria-expanded", "false");
       }
 
@@ -4178,11 +5292,16 @@
         if (!els.menuPanel || !els.menuButton) return;
         const open = !els.menuPanel.classList.contains("open");
         els.menuPanel.classList.toggle("open", open);
+        if (els.menuBackdrop) {
+          els.menuBackdrop.classList.toggle("open", open);
+          els.menuBackdrop.hidden = !open;
+        }
         els.menuButton.setAttribute("aria-expanded", String(open));
       }
 
       async function switchTab(tab, options = {}) {
         const targetTab = els.sections[tab] ? tab : "add";
+        if (targetTab !== "analysis" || !options.preserveAnalysisView) analysisGuideOpen = false;
         els.tabButtons.forEach(button => button.classList.toggle("active", button.dataset.tab === targetTab));
         Object.entries(els.sections).forEach(([name, section]) => {
           if (section) section.classList.toggle("active", name === targetTab);
@@ -4398,8 +5517,13 @@
         try {
           const draft = await GoCore.createGameDraft(sgf);
           currentDraft = draft;
-          if (keepPastePanel) els.pastePanel.classList.remove("collapsed");
-          else els.pastePanel.classList.add("collapsed");
+          if (keepPastePanel) {
+            els.pastePanel.classList.remove("collapsed");
+            if (els.addGameShell) els.addGameShell.classList.remove("is-previewing");
+          } else {
+            els.pastePanel.classList.add("collapsed");
+            if (els.addGameShell) els.addGameShell.classList.add("is-previewing");
+          }
           renderPreview(draft);
           if (!GoStorage) {
             els.saveButton.disabled = true;
@@ -4430,6 +5554,7 @@
           els.warningList.classList.add("hidden");
           els.boardContainer.innerHTML = "";
           els.pastePanel.classList.remove("collapsed");
+          if (els.addGameShell) els.addGameShell.classList.remove("is-previewing");
           showMessage(els.addMessage, "error", error.message || "Could not parse SGF.");
           return { parsed: false, saved: false, reason: "parse-failed", message: error.message || "" };
         }
@@ -4438,7 +5563,9 @@
       function resetAddForm() {
         currentDraft = null;
         els.sgfInput.value = "";
+        updateSgfPlaceholderState();
         els.pastePanel.classList.remove("collapsed");
+        if (els.addGameShell) els.addGameShell.classList.remove("is-previewing");
         els.previewArea.classList.add("hidden");
         els.previewFacts.innerHTML = "";
         els.warningList.innerHTML = "";
@@ -4446,6 +5573,7 @@
         els.boardContainer.innerHTML = "";
         els.saveButton.disabled = true;
         clearMessage(els.addMessage);
+        lastPasteAutoSaveText = "";
         els.sgfInput.focus();
       }
 
@@ -4492,6 +5620,29 @@
           endedByTwoPasses: regenerated.endedByTwoPasses,
           gameFingerprint: regenerated.gameFingerprint
         });
+      }
+
+      function formatImportedAtShort(record) {
+        const raw = record && (record.importedAt || record.savedAt || record.createdAt || record.addedAt);
+        if (!raw) return "Date unavailable";
+        const date = new Date(raw);
+        if (!Number.isFinite(date.getTime())) return "Date unavailable";
+        try {
+          return new Intl.DateTimeFormat("en-US", {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true
+          }).format(date);
+        } catch (error) {
+          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          let hours = date.getHours();
+          const minutes = String(date.getMinutes()).padStart(2, "0");
+          const suffix = hours >= 12 ? "PM" : "AM";
+          hours = hours % 12 || 12;
+          return `${months[date.getMonth()]} ${date.getDate()}, ${hours}:${minutes} ${suffix}`;
+        }
       }
 
       async function renderHistory() {
@@ -4559,7 +5710,8 @@
                     </div>
                     <div class="history-sub">${escapeHtml(g.moveCount ?? 0)} moves · Captures ${escapeHtml(capturePair(g))}</div>
                   </div>
-                  <div class="action-row">
+                  <div class="history-action">
+                    <span class="history-timestamp">${escapeHtml(formatImportedAtShort(g))}</span>
                     <button class="compact-button secondary-button" data-action="open-detail" data-hash="${escapeHtml(g.sourceHash)}">Open Replay</button>
                   </div>
                 </article>
@@ -4781,6 +5933,16 @@
         const button = event.target.closest("button[data-action]");
         if (!button || !els.historyContent.contains(button)) return;
         const action = button.dataset.action;
+        if (action === "history-chart-mode") {
+          historyChartMode = button.dataset.mode === "cumulative" ? "cumulative" : "rolling";
+          await renderHistory();
+          return;
+        }
+        if (action === "history-chart-interval") {
+          historyChartInterval = button.dataset.interval || null;
+          await renderHistory();
+          return;
+        }
         if (action === "filter-history") {
           historyFilter = button.dataset.filter || "all";
           await renderHistory();
@@ -4864,6 +6026,16 @@
         const action = button.dataset.action;
         if (action === "analysis-go-add") {
           await switchTab("add");
+          return;
+        }
+        if (action === "analysis-open-guide") {
+          analysisGuideOpen = true;
+          await switchTab("analysis", { preserveAnalysisView: true });
+          return;
+        }
+        if (action === "analysis-back") {
+          analysisGuideOpen = false;
+          await switchTab("analysis", { preserveAnalysisView: true });
           return;
         }
         if (action === "analysis-open-detail") {
@@ -4983,7 +6155,7 @@
               </article>
             `).join("")}
           </div>
-        ` : `<p class="small-note">Save more games before treating these as patterns. For now, use Review Priorities to pick games to replay.</p>`;
+        ` : `<p class="small-note">More games needed.</p>`;
         const checklistHtml = checklist.length ? `
           <details class="replay-checklist">
             <summary>Universal 9×9 Replay Checklist</summary>
@@ -4996,41 +6168,93 @@
       }
 
 
-      async function renderAnalysis() {
-        if (!els.analysisContent) return;
-        detailReplay = null;
-        if (!GoStorage) {
-          els.analysisContent.innerHTML = `<p class="empty-state">IndexedDB is not available in this browser.</p>`;
-          return;
-        }
-        let games;
-        try {
-          games = (await GoStorage.getAllGames()).map(GoCore.enrichGameRecord);
-        } catch (error) {
-          els.analysisContent.innerHTML = `<p class="empty-state">Could not open local game history: ${escapeHtml(error.message || "IndexedDB error")}</p>`;
-          return;
-        }
-        if (!games.length) {
-          els.analysisContent.innerHTML = `
-            <div class="empty-card">
-              <p class="empty-state"><strong>No games saved yet.</strong><br>Save games to generate local, rule-based analysis.</p>
-              <div class="action-row"><button class="secondary-button" data-action="analysis-go-add">Add Game</button></div>
-            </div>
-          `;
-          return;
-        }
+      function analysisKnownGames(gamesInput) {
+        return (Array.isArray(gamesInput) ? gamesInput : []).map(GoCore.enrichGameRecord).filter(game => ["Win", "Loss", "Draw"].includes(game.userResult));
+      }
+
+      function renderAnalysisGuideButton() {
+        return `
+          <div class="action-row" style="justify-content:center; margin-top:2px;">
+            <button class="secondary-button" data-action="analysis-open-guide">Open Replay Review Guide</button>
+          </div>
+        `;
+      }
+
+      function buildBasicAnalysisSignals(gamesInput) {
+        const games = (Array.isArray(gamesInput) ? gamesInput : []).map(GoCore.enrichGameRecord);
+        const known = analysisKnownGames(games);
+        const recentKnown = [...known].sort((a, b) => String(b.importedAt || "").localeCompare(String(a.importedAt || "")));
+        const numeric = value => Number.isFinite(Number(value)) ? Number(value) : 0;
+        const method = game => String(game.resultMethod || "").toLowerCase();
+        const rows = [
+          ["Recent losses", String(recentKnown.slice(0, 5).filter(game => game.userResult === "Loss").length)],
+          ["Score losses", String(known.filter(game => game.userResult === "Loss" && method(game) === "score").length)],
+          ["Close losses", String(known.filter(game => game.userResult === "Loss" && method(game) === "score" && Number.isFinite(Number(game.userMargin)) && Math.abs(Number(game.userMargin)) <= 3).length)],
+          ["Long losses", String(known.filter(game => game.userResult === "Loss" && numeric(game.moveCount) >= 71).length)],
+          ["Opponent captured 5+ total", String(games.filter(game => numeric(game.captureCountsByOpponent) >= 5).length)]
+        ];
+        return `
+          <p class="small-note">Early signals only. More games are needed before deeper patterns are shown.</p>
+          ${renderStatsRows(rows, { headers: ["Review signal", "Count"], narrow: true })}
+        `;
+      }
+
+      function buildAnalysisSummaryHtml(gamesInput, analysis, knownGames) {
+        const games = Array.isArray(gamesInput) ? gamesInput : [];
+        const recentKnown = [...knownGames].sort((a, b) => String(b.importedAt || "").localeCompare(String(a.importedAt || "")));
+        const recentLosses = recentKnown.slice(0, 5).filter(game => game.userResult === "Loss").length;
+        return analysisStatGrid([
+          ["Games analyzed", String(games.length)],
+          ["Known-result games", String(knownGames.length)],
+          ["Record", statsRecordText(knownGames)],
+          ["Recent losses", `${recentLosses} in last ${Math.min(5, recentKnown.length) || 0}`],
+          ["Review priority", analysis.reviewPriorities.length ? `${analysis.reviewPriorities[0].priorityLabel}` : "—"]
+        ]);
+      }
+
+      function buildAnalysisGuideViewHtml(gamesInput) {
+        const games = (Array.isArray(gamesInput) ? gamesInput : []).map(GoCore.enrichGameRecord);
         const analysis = GoCore.computeAnalysis(games);
-        const priorityChart = renderBarChart("Review Priority Distribution", buildAnalysisPriorityDistribution(games), { note: "Priority is calculated from local rule-based review signals." });
-        const lossTagChart = renderBarChart("Loss Profile Tags", buildLossProfileTagData(games), { emptyText: "Save losses to populate this chart." });
-        const captureComparisonChart = renderBarChart("Capture Pattern Comparison", buildCaptureComparisonData(games), { subtitle: "Average captures in wins and losses", scaleToMax: true, valueFormatter: item => item.note || String(item.value) });
-        const sampleNote = games.length < 5
-          ? "Very limited analysis. Save more games before treating these as patterns."
-          : games.length < 10
-            ? "Early patterns only. Save at least 10 games for stronger analysis."
-            : "Patterns are rule-based summaries of your saved SGFs.";
+        const replayReviewGuideHtml = renderReplayReviewGuide(analysis.replayReviewGuide);
+        const suggestedFocus = Array.isArray(analysis.suggestions) && analysis.suggestions.length
+          ? `<ol class="compact-list">${analysis.suggestions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>`
+          : `<p class="small-note">More games needed.</p>`;
+        return `
+          <div class="analysis-layout analysis-guide-view">
+            <section class="analysis-section">
+              <div class="action-row" style="justify-content:space-between; margin:0 0 12px;">
+                <h2 class="page-title" style="margin:0;">Replay Review Guide</h2>
+                <button class="secondary-button" data-action="analysis-back">Back to Analysis</button>
+              </div>
+              <p class="small-note">Use this guide while replaying flagged games. It turns saved-game signals into checkpoints to inspect manually.</p>
+            </section>
+            ${analysisSection("Pattern-based replay guide", replayReviewGuideHtml)}
+            ${analysisSection("Self-Review Questions", renderQuestionGroups(analysis.selfReviewQuestions))}
+            ${analysisSection("Suggested Focus", suggestedFocus)}
+          </div>
+        `;
+      }
+
+      function buildAnalysisViewHtml(gamesInput) {
+        const games = (Array.isArray(gamesInput) ? gamesInput : []).map(GoCore.enrichGameRecord);
+        const knownGames = analysisKnownGames(games);
+        const analysis = GoCore.computeAnalysis(games);
         const priorityHtml = analysis.reviewPriorities.length
           ? `<div class="priority-list">${analysis.reviewPriorities.map(renderPriorityCard).join("")}</div>`
           : `<p class="small-note">No clear review priorities yet.</p>`;
+        if (knownGames.length < 10) {
+          return `
+            <div class="analysis-layout">
+              ${analysisSection("Analysis Summary", buildAnalysisSummaryHtml(games, analysis, knownGames), "Early signals only. More games are needed before deeper patterns are shown.")}
+              ${analysisSection("Review Priorities", priorityHtml)}
+              ${analysisSection("Basic Review Signals", buildBasicAnalysisSignals(games))}
+              ${renderAnalysisGuideButton()}
+            </div>
+          `;
+        }
+        const priorityChart = renderBarChart("Review Priority Distribution", buildAnalysisPriorityDistribution(games));
+        const lossTagChart = renderBarChart("Loss Profile Tags", buildLossProfileTagData(games), { emptyText: "Save losses to populate this chart." });
+        const captureComparisonChart = renderBarChart("Capture Pattern Comparison", buildCaptureComparisonData(games), { subtitle: "Average captures in wins and losses", scaleToMax: true, valueFormatter: item => item.note || String(item.value) });
         const openingHtml = analysisStatGrid([
           ["Most common first user move", analysis.opening.mostCommonFirstUserMove],
           ["Best first user move", analysis.opening.bestFirstUserMove],
@@ -5040,9 +6264,9 @@
           ["Best opening pattern", analysis.opening.bestOpeningPattern],
           ["Worst opening pattern", analysis.opening.worstOpeningPattern]
         ]) + `
-          <div style="margin-top:12px;">${analysisList(analysis.opening.firstUserMoveWinRates, "Not enough repeated first moves yet.")}</div>
-          <div style="margin-top:12px;">${analysisList(analysis.opening.openingSignature3Patterns, "Not enough repeated 3-move patterns yet.")}</div>
-          <div style="margin-top:12px;">${analysisList(analysis.opening.openingsToReview, "Not enough repeated openings yet.")}</div>
+          <div style="margin-top:12px;">${analysisList(analysis.opening.firstUserMoveWinRates, "No repeated first moves yet.")}</div>
+          <div style="margin-top:12px;">${analysisList(analysis.opening.openingSignature3Patterns, "No repeated 3-move patterns yet.")}</div>
+          <div style="margin-top:12px;">${analysisList(analysis.opening.openingsToReview, "No repeated openings yet.")}</div>
         `;
         const captureHtml = analysisStatGrid([
           ["Average captures by you", fmtAnalysisAverage(analysis.capture.averageByUser)],
@@ -5085,17 +6309,10 @@
           ["Upset losses", analysis.colorRating.upsetLosses],
           ["Learning losses", analysis.colorRating.learningLosses]
         ]);
-        const replayReviewGuideHtml = renderReplayReviewGuide(analysis.replayReviewGuide);
-        els.analysisContent.innerHTML = `
+        return `
           <div class="analysis-layout">
-            ${analysisSection("Analysis Summary", analysisStatGrid([
-              ["Games analyzed", analysis.summary.gamesAnalyzed],
-              ["Overall record", analysis.summary.overallRecord],
-              ["Recent form", analysis.summary.recentForm],
-              ["Main issue", analysis.summary.mainIssue],
-              ["Review priority", analysis.summary.reviewPriority]
-            ]), sampleNote)}
-            ${analysisSection("Top Findings", analysisList(analysis.topFindings))}
+            ${analysisSection("Analysis Summary", buildAnalysisSummaryHtml(games, analysis, knownGames), "Rule-based summaries from saved SGFs.")}
+            ${analysisSection("Top Findings", analysisList(analysis.topFindings, "More games needed."))}
             ${analysisSection("Review Priority Distribution", priorityChart)}
             ${analysisSection("Review Priorities", priorityHtml)}
             ${analysisSection("Loss Profile Tags", lossTagChart)}
@@ -5104,13 +6321,278 @@
             ${analysisSection("Opening Patterns", openingHtml)}
             ${analysisSection("Game Length & Result Patterns", lengthHtml)}
             ${analysisSection("Color & Rating Patterns", colorRatingHtml)}
-            ${analysisSection("Replay Review Guide", replayReviewGuideHtml)}
-            ${analysisSection("Self-Review Questions", renderQuestionGroups(analysis.selfReviewQuestions))}
-            ${analysisSection("Suggested Focus", `<ol class="compact-list">${analysis.suggestions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>`)}
+            ${renderAnalysisGuideButton()}
           </div>
         `;
       }
 
+
+      async function renderAnalysis() {
+        if (!els.analysisContent) return;
+        detailReplay = null;
+        if (!GoStorage) {
+          els.analysisContent.innerHTML = `<p class="empty-state">IndexedDB is not available in this browser.</p>`;
+          return;
+        }
+        let games;
+        try {
+          games = (await GoStorage.getAllGames()).map(GoCore.enrichGameRecord);
+        } catch (error) {
+          els.analysisContent.innerHTML = `<p class="empty-state">Could not open local game history: ${escapeHtml(error.message || "IndexedDB error")}</p>`;
+          return;
+        }
+        if (analysisGuideOpen) {
+          els.analysisContent.innerHTML = buildAnalysisGuideViewHtml(games);
+          return;
+        }
+        if (!games.length) {
+          els.analysisContent.innerHTML = `
+            <div class="empty-card">
+              <p class="empty-state"><strong>No games saved yet.</strong><br>Save games to generate local, rule-based analysis.</p>
+              <div class="action-row" style="justify-content:center;"><button class="secondary-button" data-action="analysis-go-add">Add Game</button><button class="secondary-button" data-action="analysis-open-guide">Open Replay Review Guide</button></div>
+            </div>
+          `;
+          return;
+        }
+        els.analysisContent.innerHTML = buildAnalysisViewHtml(games);
+      }
+
+
+      function statsRecordText(gamesInput) {
+        const games = statsKnownGames(gamesInput);
+        const wins = games.filter(g => g.userResult === "Win").length;
+        const losses = games.filter(g => g.userResult === "Loss").length;
+        const draws = games.filter(g => g.userResult === "Draw").length;
+        return `${wins}–${losses}–${draws}`;
+      }
+
+      function statsWinRateText(gamesInput) {
+        const games = statsKnownGames(gamesInput);
+        const score = games.reduce((sum, game) => sum + finiteNumber(resultScoreValue(game.userResult), 0), 0);
+        return games.length ? `${((score / games.length) * 100).toFixed(1)}%` : "—";
+      }
+
+      function statsKnownCount(gamesInput) {
+        return statsKnownGames(gamesInput).length;
+      }
+
+      function statsCompactSection(title, body, options = {}) {
+        if (options.open) {
+          return `
+            <section class="stats-section">
+              <div class="stats-section-header"><h2>${escapeHtml(title)}</h2></div>
+              ${body}
+            </section>
+          `;
+        }
+        return `
+          <details class="stats-collapse">
+            <summary>${escapeHtml(title)}</summary>
+            <div class="stats-collapse-body">${body}</div>
+          </details>
+        `;
+      }
+
+      function renderStatsOverviewCards(items) {
+        return `
+          <div class="stats-grid core stats-grid-compact">
+            ${items.map(([label, value, note]) => `
+              <div class="stat-card primary-stat">
+                <div class="stat-label">${escapeHtml(label)}</div>
+                <div class="stat-value ${String(value || "").length > 18 ? "stat-value-small" : ""}">${escapeHtml(value)}</div>
+                ${note ? `<div class="small-note">${escapeHtml(note)}</div>` : ""}
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+
+      function renderStatsRows(rowsInput, options = {}) {
+        const rows = (Array.isArray(rowsInput) ? rowsInput : []).filter(row => row && row.length >= 2);
+        if (!rows.length) return `<p class="empty-state compact-empty">${escapeHtml(options.emptyText || "No data yet.")}</p>`;
+        return `
+          <div class="stats-row-table ${options.narrow ? "stats-row-table-narrow" : ""}">
+            ${options.headers ? `
+              <div class="stats-row stats-row-header">
+                ${options.headers.map(header => `<div>${escapeHtml(header)}</div>`).join("")}
+              </div>
+            ` : ""}
+            ${rows.map(row => `
+              <div class="stats-row">
+                ${row.map((cell, index) => `<div class="${index === 0 ? "stats-row-label" : "stats-row-value"}">${escapeHtml(cell)}</div>`).join("")}
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+
+      function renderResultsBreakdownCompact(gamesInput) {
+        const rows = buildResultsBreakdownData(gamesInput).map(row => [row.label, String(row.value), formatChartPercent(row.percentage)]);
+        return `
+          <div class="compact-chart-block">
+            ${renderBarChart("Results Breakdown", buildResultsBreakdownData(gamesInput), { allowZeroValues: true, valueFormatter: item => `${finiteNumber(item.value, 0).toFixed(0)} · ${formatChartPercent(item.percentage)}` })}
+            ${renderStatsRows(rows, { headers: ["Result", "Games", "Share"] })}
+          </div>
+        `;
+      }
+
+      function renderResultMethodsCompact(gamesInput) {
+        const rows = buildResultMethodBreakdownData(gamesInput).map(row => [row.label, String(row.value), formatChartPercent(row.percentage)]);
+        return renderStatsRows(rows, { headers: ["Method", "Games", "Share"] });
+      }
+
+      function renderColorPerformanceCompact(gamesInput) {
+        const rows = buildColorPerformanceChartData(gamesInput).map(row => [
+          row.label,
+          row.record || "0–0–0",
+          row.count ? formatChartPercent(row.percentage) : "—",
+          `${row.count} game${row.count === 1 ? "" : "s"}`
+        ]);
+        const enough = buildColorPerformanceChartData(gamesInput).every(row => row.count >= 5);
+        const note = enough ? "" : `<p class="small-note">More games needed before comparing color performance.</p>`;
+        return `${renderStatsRows(rows, { headers: ["Color", "Record", "Win rate", "Sample"] })}${note}`;
+      }
+
+      function renderCaptureStatsCompact(gamesInput, stats) {
+        const games = statsKnownGames(gamesInput);
+        const userOut = games.filter(g => finiteNumber(g.captureDifferential, finiteNumber(g.captureCountsByUser, 0) - finiteNumber(g.captureCountsByOpponent, 0)) > 0);
+        const oppOut = games.filter(g => finiteNumber(g.captureDifferential, finiteNumber(g.captureCountsByUser, 0) - finiteNumber(g.captureCountsByOpponent, 0)) < 0);
+        const captureRate = rows => {
+          if (!rows.length) return "0 games";
+          if (rows.length < 3) return `Small sample (${rows.length} game${rows.length === 1 ? "" : "s"})`;
+          return `${statsWinRateText(rows)} (${rows.length} games)`;
+        };
+        const avg = value => value === null || value === undefined ? "—" : fmtAverage(value);
+        const rows = [
+          ["Capture differential", stats.averageCaptureDifferential === null ? "—" : GoCore.formatMargin(stats.averageCaptureDifferential)],
+          ["Average captures by you", avg(stats.averageCapturesByUser)],
+          ["Average captures by opponent", avg(stats.averageCapturesByOpponent)],
+          ["Largest capture allowed", String(stats.largestSingleCaptureByOpponent || 0)],
+          ["WR when you out-capture", captureRate(userOut)],
+          ["WR when opponent out-captures you", captureRate(oppOut)]
+        ];
+        return `${renderStatsRows(rows)}${renderBarChart("Capture Differential Distribution", buildCaptureDifferentialBuckets(gamesInput), { allowZeroValues: true, note: "Positive buckets mean you captured more stones." })}`;
+      }
+
+      function renderMoveProfileCompact(gamesInput, stats) {
+        const user = stats.userMoveProfile || {};
+        const opponent = stats.opponentMoveProfile || {};
+        const userTotal = finiteNumber(user.userCornerMoves, 0) + finiteNumber(user.userSideMoves, 0) + finiteNumber(user.userCenterMoves, 0);
+        const oppTotal = finiteNumber(opponent.opponentCornerMoves, 0) + finiteNumber(opponent.opponentSideMoves, 0) + finiteNumber(opponent.opponentCenterMoves, 0);
+        const p = (value, total) => total ? formatChartPercent((finiteNumber(value, 0) / total) * 100) : "—";
+        const rows = [
+          ["Corner", p(user.userCornerMoves, userTotal), p(opponent.opponentCornerMoves, oppTotal)],
+          ["Side", p(user.userSideMoves, userTotal), p(opponent.opponentSideMoves, oppTotal)],
+          ["Center", p(user.userCenterMoves, userTotal), p(opponent.opponentCenterMoves, oppTotal)]
+        ];
+        const note = `<p class="small-note">Move profile shows placement percentages only; interpretation belongs in Analysis.</p>`;
+        return `${renderStatsRows(rows, { headers: ["Area", "You", "Opponent"] })}${note}`;
+      }
+
+      function buildOpeningStatsRows(gamesInput) {
+        const games = statsKnownGames(gamesInput);
+        const groups = new Map();
+        games.forEach(game => {
+          const key = game.openingSignature5 || game.openingSignature3 || game.firstUserMove || "";
+          if (!key) return;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(game);
+        });
+        return Array.from(groups.entries())
+          .filter(([, rows]) => rows.length >= 2)
+          .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+          .slice(0, 8)
+          .map(([pattern, rows]) => [pattern, String(rows.length), statsRecordText(rows), rows.length >= 3 ? statsWinRateText(rows) : "Early sample"]);
+      }
+
+      function renderOpeningStatsCompact(gamesInput) {
+        const rows = buildOpeningStatsRows(gamesInput);
+        const hasComparison = rows.some(row => Number(row[1]) >= 3);
+        const note = hasComparison ? `<p class="small-note">Opening rows are shown only for repeated patterns. Avoid ranking one-off openings.</p>` : `<p class="small-note">No repeated openings yet.</p>`;
+        return `${renderStatsRows(rows, { headers: ["Opening pattern", "Games", "Record", "Win rate"], emptyText: "No repeated openings yet." })}${note}`;
+      }
+
+      function renderReviewSignalsCompact(gamesInput) {
+        const games = statsKnownGames(gamesInput);
+        const scoreLosses = games.filter(g => g.userResult === "Loss" && g.resultMethod === "score");
+        const closeLosses = games.filter(g => g.userResult === "Loss" && Number.isFinite(Number(g.userMargin)) && Math.abs(Number(g.userMargin)) <= 3);
+        const longLosses = games.filter(g => g.userResult === "Loss" && finiteNumber(g.moveCount, 0) >= 71);
+        const oppCaptured5 = games.filter(g => finiteNumber(g.captureCountsByOpponent, finiteNumber(g.capturesByOpponent, 0)) >= 5);
+        const oppSingle3 = games.filter(g => finiteNumber(g.largestCaptureByOpponent, 0) >= 3);
+        const groups = new Map();
+        games.forEach(game => {
+          const key = game.openingSignature5 || game.openingSignature3 || game.firstUserMove || "";
+          if (!key) return;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(game);
+        });
+        const repeatedOpeningLosses = Array.from(groups.values()).filter(rows => rows.length >= 2).reduce((sum, rows) => sum + rows.filter(g => g.userResult === "Loss").length, 0);
+        return renderStatsRows([
+          ["Losses by score", String(scoreLosses.length)],
+          ["Close losses", String(closeLosses.length)],
+          ["Long losses", String(longLosses.length)],
+          ["Opponent captured 5+ total", String(oppCaptured5.length)],
+          ["Opponent single capture 3+", String(oppSingle3.length)],
+          ["Repeated opening losses", String(repeatedOpeningLosses)]
+        ], { headers: ["Review signal", "Count"] });
+      }
+
+      function renderLibraryStatsCompact(gamesInput, stats) {
+        const rows = [
+          ["Favorites", String(stats.favoritesCount || 0)],
+          ["Review Later", String(stats.reviewLaterCount || 0)],
+          ["Tagged games", String(stats.taggedGamesCount || 0)],
+          ["Games with notes", String(stats.gamesWithNotesCount || 0)]
+        ];
+        return renderStatsRows(rows, { headers: ["Library item", "Count"] });
+      }
+
+      function buildStatsViewHtml(gamesInput) {
+        const games = (Array.isArray(gamesInput) ? gamesInput : []).map(GoCore.enrichGameRecord);
+        const stats = GoCore.computeStats(games);
+        const known = statsKnownGames(games);
+        const knownCount = known.length;
+        const averageMargin = stats.averageMargin === null ? "—" : GoCore.formatMargin(stats.averageMargin);
+        const averageMoves = stats.averageMoves === null ? "—" : stats.averageMoves.toFixed(1);
+        const overview = renderStatsOverviewCards([
+          ["Total games", String(stats.totalGames)],
+          ["Record", statsRecordText(games)],
+          ["Win rate", statsWinRateText(games)],
+          ["Current streak", stats.currentStreak],
+          ["Average margin", averageMargin],
+          ["Average moves", averageMoves]
+        ]);
+        const unlockNote = knownCount < 10 ? `<p class="small-note stats-unlock-note">Save at least 10 completed games to unlock deeper stats.</p>` : "";
+        if (knownCount < 10) {
+          return `
+            <div class="stats-layout">
+              ${statsCompactSection("Main Overview", `${overview}${unlockNote}`, { open: true })}
+            </div>
+          `;
+        }
+        return `
+          <div class="stats-layout">
+            ${statsCompactSection("Main Overview", overview, { open: true })}
+            ${statsCompactSection("Results Breakdown", renderResultsBreakdownCompact(games), { open: true })}
+            ${statsCompactSection("Recent Form", renderStatsRows([
+              ["Last 5 record", stats.last5Record],
+              ["Last 10 record", stats.last10Record],
+              ["Current streak", stats.currentStreak],
+              ["Best win streak", `W${stats.bestWinStreak}`],
+              ["Worst loss streak", `L${stats.worstLossStreak}`],
+              ["Recent win rate", stats.recentWinRate]
+            ]), { open: true })}
+            ${statsCompactSection("Result Methods", renderResultMethodsCompact(games))}
+            ${statsCompactSection("Color Performance", renderColorPerformanceCompact(games))}
+            ${statsCompactSection("Capture Stats", renderCaptureStatsCompact(games, stats))}
+            ${statsCompactSection("Game Length Distribution", renderBarChart("Game Length Distribution", buildGameLengthDistribution(games), { allowZeroValues: true }))}
+            ${statsCompactSection("Opening Stats", renderOpeningStatsCompact(games))}
+            ${statsCompactSection("Move Profile", renderMoveProfileCompact(games, stats))}
+            ${statsCompactSection("Review Signals", renderReviewSignalsCompact(games))}
+            ${statsCompactSection("Library", renderLibraryStatsCompact(games, stats))}
+          </div>
+        `;
+      }
 
       async function renderStats() {
         if (!GoStorage) {
@@ -5124,197 +6606,7 @@
           els.statsContent.innerHTML = `<p class="empty-state">Could not open local game history: ${escapeHtml(error.message || "IndexedDB error")}</p>`;
           return;
         }
-        const stats = GoCore.computeStats(games);
-        const resultsChart = renderBarChart("Results Breakdown", buildResultsBreakdownData(games), { note: "Draws and unknown results are shown separately." });
-        const colorChart = renderBarChart("Color Performance", buildColorPerformanceChartData(games), { subtitle: "Win rate by color", allowZeroValues: true, valueFormatter: item => `${formatChartPercent(item.percentage)} · ${item.count} game${item.count === 1 ? "" : "s"}` });
-        const methodChart = renderBarChart("Result Method Breakdown", buildResultMethodBreakdownData(games), { note: "Uses RE[...] result methods from saved SGFs." });
-        const captureBucketChart = renderBarChart("Capture Differential Distribution", buildCaptureDifferentialBuckets(games), { note: "Positive buckets mean you captured more stones." });
-        const lengthChart = renderBarChart("Game Length Distribution", buildGameLengthDistribution(games));
-        const averageMargin = stats.averageMargin === null ? "—" : GoCore.formatMargin(stats.averageMargin);
-        const averageMoves = stats.averageMoves === null ? "—" : stats.averageMoves.toFixed(1);
-        const blackWinPct = percentNumber(stats.blackWinRate);
-        const whiteWinPct = percentNumber(stats.whiteWinRate);
-        const marginText = value => value === null || value === undefined ? "—" : GoCore.formatMargin(value);
-        const statsGrid = items => `
-          <div class="stats-grid">
-            ${items.map(([label, value, note]) => `
-              <div class="stat-card">
-                <div class="stat-label">${escapeHtml(label)}</div>
-                <div class="stat-value ${String(value || "").length > 24 ? "stat-value-small" : ""}">${escapeHtml(value)}</div>
-                ${note ? `<div class="small-note">${escapeHtml(note)}</div>` : ""}
-              </div>
-            `).join("")}
-          </div>
-        `;
-        const section = (title, items, extra = "", options = {}) => {
-          const body = `${extra}${statsGrid(items)}`;
-          if (options.open) {
-            return `
-              <section class="stats-section">
-                <div class="stats-section-header"><h2>${escapeHtml(title)}</h2></div>
-                ${body}
-              </section>
-            `;
-          }
-          return `
-            <details class="stats-collapse">
-              <summary>${escapeHtml(title)}</summary>
-              <div class="stats-collapse-body">${body}</div>
-            </details>
-          `;
-        };
-        const profileItems = [
-          ["Corner moves", stats.userMoveProfile.userCornerMoves],
-          ["Side moves", stats.userMoveProfile.userSideMoves],
-          ["Center moves", stats.userMoveProfile.userCenterMoves],
-          ["Edge moves", stats.userMoveProfile.userEdgeMoves],
-          ["Second-line moves", stats.userMoveProfile.userSecondLineMoves],
-          ["Third-line moves", stats.userMoveProfile.userThirdLineMoves],
-          ["Middle moves", stats.userMoveProfile.userMiddleMoves]
-        ];
-        const opponentProfileItems = [
-          ["Opponent corner", stats.opponentMoveProfile.opponentCornerMoves],
-          ["Opponent side", stats.opponentMoveProfile.opponentSideMoves],
-          ["Opponent center", stats.opponentMoveProfile.opponentCenterMoves]
-        ];
-        els.statsContent.innerHTML = `
-          <div class="stats-layout">
-            <section class="stats-section">
-              <div class="stats-section-header"><h2>Core Record</h2></div>
-              <div class="stats-grid core">
-                ${[
-                  ["Total games", stats.totalGames],
-                  ["Win rate", stats.winRate],
-                  ["Average margin", averageMargin],
-                  ["Average moves", averageMoves]
-                ].map(([label, value]) => `
-                  <div class="stat-card primary-stat">
-                    <div class="stat-label">${escapeHtml(label)}</div>
-                    <div class="stat-value">${escapeHtml(value)}</div>
-                  </div>
-                `).join("")}
-              </div>
-              <div class="stats-grid" style="margin-top:12px;">
-                ${[["Wins", stats.wins], ["Losses", stats.losses], ["Draws", stats.draws], ["Unknown", stats.unknownResults]].map(([label, value]) => `
-                  <div class="stat-card">
-                    <div class="stat-label">${escapeHtml(label)}</div>
-                    <div class="stat-value">${escapeHtml(value)}</div>
-                  </div>
-                `).join("")}
-              </div>
-            </section>
-
-            ${resultsChart}
-
-            ${section("Recent Form", [
-              ["Last 5 record", stats.last5Record],
-              ["Last 10 record", stats.last10Record],
-              ["Current streak", stats.currentStreak],
-              ["Best win streak", `W${stats.bestWinStreak}`],
-              ["Worst loss streak", `L${stats.worstLossStreak}`],
-              ["Recent win rate", stats.recentWinRate]
-            ], "", { open: true })}
-
-            ${section("Result Methods", [
-              ["Wins by score", stats.winsByScore],
-              ["Losses by score", stats.lossesByScore],
-              ["Wins by resignation", stats.winsByResignation],
-              ["Losses by resignation", stats.lossesByResignation],
-              ["Wins by timeout", stats.winsByTimeout],
-              ["Losses by timeout", stats.lossesByTimeout],
-              ["Draws", stats.draws],
-              ["Unknown results", stats.unknownResults]
-            ], methodChart)}
-
-            <details class="stats-collapse">
-              <summary>Color Performance</summary>
-              <div class="stats-collapse-body">
-                ${colorChart}
-                <div class="stats-grid" style="margin-top:12px;">
-                <div class="stat-card">
-                  <div class="stat-label">Win rate as Black</div>
-                  <div class="stat-value">${escapeHtml(stats.blackWinRate)}</div>
-                  <div class="small-note">${escapeHtml(stats.blackGames)} games</div>
-                  <div class="bar-meter"><div class="bar-fill" style="width:${blackWinPct}%"></div></div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">Win rate as White</div>
-                  <div class="stat-value">${escapeHtml(stats.whiteWinRate)}</div>
-                  <div class="small-note">${escapeHtml(stats.whiteGames)} games</div>
-                  <div class="bar-meter"><div class="bar-fill" style="width:${whiteWinPct}%"></div></div>
-                </div>
-                ${[
-                  ["Avg moves as Black", fmtAverage(stats.averageMovesAsBlack)],
-                  ["Avg moves as White", fmtAverage(stats.averageMovesAsWhite)],
-                  ["Avg captures as Black", fmtAverage(stats.averageCapturesAsBlack)],
-                  ["Avg captures as White", fmtAverage(stats.averageCapturesAsWhite)],
-                  ["Score wins as Black", stats.scoreWinsAsBlack],
-                  ["Score wins as White", stats.scoreWinsAsWhite],
-                  ["Resignation wins as Black", stats.resignationWinsAsBlack],
-                  ["Resignation wins as White", stats.resignationWinsAsWhite]
-                ].map(([label, value]) => `
-                  <div class="stat-card"><div class="stat-label">${escapeHtml(label)}</div><div class="stat-value">${escapeHtml(value)}</div></div>
-                `).join("")}
-                </div>
-              </div>
-            </details>
-
-            ${section("Capture Stats", [
-              ["Average captures by you", fmtAverage(stats.averageCapturesByUser)],
-              ["Average captures by opponent", fmtAverage(stats.averageCapturesByOpponent)],
-              ["Average capture differential", fmtAverage(stats.averageCaptureDifferential, n => GoCore.formatMargin(n))],
-              ["Most captures by you", stats.mostCapturesByUserInOneGame],
-              ["Most captures allowed", stats.mostCapturesAllowedInOneGame],
-              ["Largest single capture by you", stats.largestSingleCaptureByUser],
-              ["Largest single capture by opponent", stats.largestSingleCaptureByOpponent],
-              ["You captured 5+", stats.gamesUserCaptured5Plus],
-              ["Opponent captured 5+", stats.gamesOpponentCaptured5Plus],
-              ["WR when you out-capture", stats.winRateWhenUserOutCaptures],
-              ["WR when opponent out-captures", stats.winRateWhenOpponentOutCaptures]
-            ], captureBucketChart)}
-
-            ${lengthChart}
-
-            ${section("Opening Stats", [
-              ["Most common first move", stats.mostCommonFirstMove],
-              ["Most common first user move", stats.mostCommonFirstUserMove],
-              ["Win rate by first user move", stats.winRateByFirstUserMove],
-              ["Most common first 3", stats.mostCommonFirst3Pattern],
-              ["Most common first 5", stats.mostCommonFirst5Pattern],
-              ["Best opening pattern", stats.bestOpeningPatternByWinRate],
-              ["Worst opening pattern", stats.worstOpeningPatternByWinRate]
-            ])}
-
-            ${section("Margin Stats", [
-              ["Average win margin", marginText(stats.averageWinMargin)],
-              ["Average loss margin", marginText(stats.averageLossMargin)],
-              ["Largest win", marginText(stats.largestWin)],
-              ["Largest loss", marginText(stats.largestLoss)],
-              ["Close games record", stats.closeGamesRecord],
-              ["Medium games record", stats.mediumGamesRecord],
-              ["Large games record", stats.largeGamesRecord]
-            ])}
-
-            ${section("Move Profile", [...profileItems, ...opponentProfileItems])}
-
-            ${section("Final Board Stone Counts", [
-              ["Average final stones by you", fmtAverage(stats.averageFinalStonesByUser)],
-              ["Average final stones by opponent", fmtAverage(stats.averageFinalStonesByOpponent)],
-              ["Average stone differential", fmtAverage(stats.averageStoneDifferential, n => GoCore.formatMargin(n))],
-              ["More user stones", stats.gamesEndingWithMoreUserStones],
-              ["More opponent stones", stats.gamesEndingWithMoreOpponentStones],
-              ["WR with more user stones", stats.winRateMoreUserStones],
-              ["WR with more opponent stones", stats.winRateMoreOpponentStones]
-            ], `<p class="small-note">Stone counts are not score.</p>`)}
-
-            ${section("Library", [
-              ["Favorites", stats.favoritesCount],
-              ["Review Later", stats.reviewLaterCount],
-              ["Tagged games", stats.taggedGamesCount],
-              ["Games with notes", stats.gamesWithNotesCount]
-            ])}
-          </div>
-        `;
+        els.statsContent.innerHTML = buildStatsViewHtml(games);
       }
 
       function downloadBlob(filename, blob) {
@@ -5418,7 +6710,7 @@
 
       function buildJsonBackupPayload(gamesInput) {
         return {
-          app: "9×9 Go Game History Tracker",
+          app: "GO Tracker",
           schemaVersion: GoCore.APP_SCHEMA_VERSION,
           exportedAt: new Date().toISOString(),
           games: (Array.isArray(gamesInput) ? gamesInput : []).map(GoCore.enrichGameRecord)
@@ -5480,6 +6772,8 @@
         const columns = [
           "gameId",
           "currentOrder",
+          "importedAt",
+          "savedDate",
           "favorite",
           "reviewLater",
           "tags",
@@ -5516,6 +6810,8 @@
         const rows = games.map((g, index) => [
           g.gameId,
           index + 1,
+          g.importedAt || "",
+          formatImportedAtShort(g) === "Date unavailable" ? "" : formatImportedAtShort(g),
           g.favorite,
           g.reviewLater,
           tagsForCsv(g.tags),
@@ -5598,11 +6894,13 @@
         if (els.brandHomeButton) els.brandHomeButton.addEventListener("click", async event => {
           event.preventDefault();
           await switchTab("add");
+          resetAddForm();
         });
         if (els.menuButton) els.menuButton.addEventListener("click", event => {
           event.stopPropagation();
           toggleMenu();
         });
+        if (els.menuBackdrop) els.menuBackdrop.addEventListener("click", closeMenu);
         document.addEventListener("click", event => {
           if (!els.menuPanel || !els.menuButton) return;
           if (!els.menuPanel.contains(event.target) && !els.menuButton.contains(event.target)) closeMenu();
@@ -5612,6 +6910,8 @@
         });
         els.parseButton.addEventListener("click", handleParse);
         if (els.clipboardImportButton) els.clipboardImportButton.addEventListener("click", () => handleClipboardImport());
+        if (els.sgfFileButton && els.sgfFileInput) els.sgfFileButton.addEventListener("click", () => els.sgfFileInput.click());
+        if (els.sgfFileInput) els.sgfFileInput.addEventListener("change", handleSgfFileInputChange);
         els.saveButton.addEventListener("click", handleSave);
         els.newGameButton.addEventListener("click", resetAddForm);
         els.exportJsonButton.addEventListener("click", exportJsonBackup);
@@ -5625,10 +6925,15 @@
         els.sgfInput.addEventListener("keydown", event => {
           if ((event.metaKey || event.ctrlKey) && event.key === "Enter") handleParse();
         });
+        els.sgfInput.addEventListener("input", updateSgfPlaceholderState);
+        els.sgfInput.addEventListener("focus", updateSgfPlaceholderState);
+        els.sgfInput.addEventListener("blur", updateSgfPlaceholderState);
+        els.sgfInput.addEventListener("paste", handleSgfPaste);
       }
 
       async function init() {
         bindEvents();
+        updateSgfPlaceholderState();
         els.saveButton.disabled = true;
         await renderHistory();
         await renderStats();
@@ -5638,7 +6943,7 @@
       }
 
       document.addEventListener("DOMContentLoaded", init);
-      return { renderBoard, renderHistory, renderStats, renderAnalysis, renderStorageStatus, createZipBlob, safeSgfFilename, buildSgfArchiveFiles, buildJsonBackupPayload, buildCsvSummary, buildWinRateTrendData, buildResultsBreakdownData, buildColorPerformanceChartData, buildResultMethodBreakdownData, buildCaptureDifferentialBuckets, buildGameLengthDistribution, buildAnalysisPriorityDistribution, buildLossProfileTagData, buildCaptureComparisonData, renderWinRateTrendChart, renderBarChart, looksLikeSgfText, extractSharedSgfFromSearch, loadSharedSgfText, handleUrlSharedImport, handleClipboardImport, handleParse };
+      return { renderBoard, renderHistory, renderStats, renderAnalysis, renderStorageStatus, createZipBlob, safeSgfFilename, buildSgfArchiveFiles, buildJsonBackupPayload, buildCsvSummary, buildWinRateTrendData, computeDynamicYAxis, availableWinRateIntervals, buildStatsViewHtml, buildAnalysisViewHtml, buildAnalysisGuideViewHtml, buildResultsBreakdownData, buildColorPerformanceChartData, buildResultMethodBreakdownData, buildCaptureDifferentialBuckets, buildGameLengthDistribution, buildAnalysisPriorityDistribution, buildLossProfileTagData, buildCaptureComparisonData, renderWinRateTrendChart, renderBarChart, formatImportedAtShort, looksLikeSgfText, extractSharedSgfFromSearch, loadSharedSgfText, handleUrlSharedImport, handleClipboardImport, handleSgfFileImport, handlePastedSgfAutoSave, handleParse };
     })();
 
     async function runSmokeTests() {
@@ -5664,6 +6969,13 @@ PW[MariGo1 (1158)]
           assert(name, false, "accepted unexpectedly");
         } catch (error) {
           assert(name, String(error.message || "").includes(messagePart), error.message);
+        }
+      };
+      const switchTabForSmoke = async tab => {
+        const button = typeof document !== "undefined" ? document.querySelector(`[data-tab="${tab}"]`) : null;
+        if (button) {
+          button.click();
+          await new Promise(resolve => setTimeout(resolve, 0));
         }
       };
 
@@ -5722,12 +7034,23 @@ PW[MariGo1 (1158)]
         App.renderBoard(emptyBoard, emptyTarget, { marker: { row: 4, col: 4, human: "E5" } });
         assert("last-move marker does not render without a stone", emptyTarget.querySelectorAll(".last-move-marker").length === 0, emptyTarget.innerHTML.slice(0, 80));
         assert("empty board still renders full intersections", emptyTarget.querySelectorAll(".board-intersection").length === 81, emptyTarget.querySelectorAll(".board-intersection").length);
-        assert("brand title is compact", document.body.textContent.includes("9×9 GO Tracker"), "brand");
+        assert("top-left title changed to GO Tracker", document.querySelector("#brandHomeButton h1") && document.querySelector("#brandHomeButton h1").textContent.trim() === "GO Tracker", document.querySelector("#brandHomeButton h1") && document.querySelector("#brandHomeButton h1").textContent);
         assert("favicon uses app icon", Boolean(document.querySelector('link[rel="icon"][type="image/svg+xml"]')) && String(document.querySelector('link[rel="icon"]')?.getAttribute("href") || "").includes("%23d6a35d"), "favicon");
         assert("apple-touch-icon link exists", Boolean(document.querySelector('link[rel="apple-touch-icon"][href="apple-touch-icon.png"]')), "apple touch icon");
         assert("manifest link exists", Boolean(document.querySelector('link[rel="manifest"][href="site.webmanifest"]')), "manifest");
-        assert("parse button communicates auto-save", document.getElementById("parseButton") && document.getElementById("parseButton").textContent.includes("Preview") && document.getElementById("parseButton").textContent.includes("Save"), document.getElementById("parseButton") && document.getElementById("parseButton").textContent);
-        assert("auto-save helper copy exists", document.body.textContent.includes("Valid games are saved automatically after preview."), "auto-save copy");
+        assert("home heading changed", document.querySelector(".landing-title") && document.querySelector(".landing-title").textContent.trim() === "Add 9x9 GO Game:", document.querySelector(".landing-title") && document.querySelector(".landing-title").textContent);
+        assert("primary button text changed to Save Game", document.getElementById("parseButton") && document.getElementById("parseButton").textContent.trim() === "Save Game", document.getElementById("parseButton") && document.getElementById("parseButton").textContent);
+        const removedAutoSaveHelperText = ["Valid games", "saved automatically after preview."].join(" are ");
+        assert("automatic-save helper text removed", !document.body.textContent.includes(removedAutoSaveHelperText), "auto-save helper removed");
+        const supportNote = document.querySelector(".add-support-note");
+        assert("support note text changed to Supports 9x9 SGF GO Files", supportNote && supportNote.textContent.trim() === "Supports 9x9 SGF GO Files", supportNote && supportNote.textContent);
+        const oldSupportNoteText = ["Supports 9×9", "GO SGF games."].join(" ");
+        assert("old support note text no longer appears", !document.body.textContent.includes(oldSupportNoteText), "old support note removed");
+        assert("support note is outside/below main Add Game card", supportNote && document.getElementById("pastePanel") && !document.getElementById("pastePanel").contains(supportNote) && Boolean(supportNote.compareDocumentPosition(document.getElementById("pastePanel")) & Node.DOCUMENT_POSITION_PRECEDING), "support note placement");
+        assert("support note is bottom-centered on Add Game page", supportNote && getComputedStyle(supportNote).position === "absolute" && getComputedStyle(supportNote).textAlign === "center" && getComputedStyle(supportNote).bottom !== "auto", `${supportNote && getComputedStyle(supportNote).position}/${supportNote && getComputedStyle(supportNote).bottom}/${supportNote && getComputedStyle(supportNote).textAlign}`);
+        assert("support note is no longer directly beneath main card", supportNote && getComputedStyle(supportNote).position === "absolute", supportNote && getComputedStyle(supportNote).position);
+        assert("support note is centered", supportNote && getComputedStyle(supportNote).textAlign === "center", supportNote && getComputedStyle(supportNote).textAlign);
+        assert("support note is muted", supportNote && parseFloat(getComputedStyle(supportNote).fontSize) <= 14, supportNote && getComputedStyle(supportNote).fontSize);
         assert("old save confirmation button hidden", document.getElementById("saveButton") && document.getElementById("saveButton").classList.contains("hidden"), document.getElementById("saveButton") && document.getElementById("saveButton").className);
         const oldBackupCopyText = ["Export your local archive", "import a backup", "individual SGF files"].join(" ");
         assert("backup explanatory copy removed", !document.body.textContent.includes(oldBackupCopyText), "backup copy removed");
@@ -5748,8 +7071,26 @@ PW[MariGo1 (1158)]
         assert("add helper chips removed", !document.body.textContent.includes(addChipOne) && !document.body.textContent.includes(addChipTwo) && !document.body.textContent.includes(addChipThree), "helper chips removed");
         const pasteLabelText = ["Paste your game", "here:"].join(" ");
         assert("paste label removed", !document.body.textContent.includes(pasteLabelText), "paste label removed");
-        assert("sgf placeholder updated", document.getElementById("sgfInput") && document.getElementById("sgfInput").getAttribute("placeholder") === "Paste game here...", document.getElementById("sgfInput") && document.getElementById("sgfInput").getAttribute("placeholder"));
+        assert("sgf placeholder changed to Input here", document.getElementById("sgfInput") && document.getElementById("sgfInput").getAttribute("placeholder") === "Input here", document.getElementById("sgfInput") && document.getElementById("sgfInput").getAttribute("placeholder"));
+        assert("main Add Game card width is reduced", document.getElementById("pastePanel") && parseFloat(getComputedStyle(document.getElementById("pastePanel")).maxWidth) <= 560, document.getElementById("pastePanel") && getComputedStyle(document.getElementById("pastePanel")).maxWidth);
+        assert("main Add Game card height is increased", document.getElementById("pastePanel") && parseFloat(getComputedStyle(document.getElementById("pastePanel")).minHeight) >= 340, document.getElementById("pastePanel") && getComputedStyle(document.getElementById("pastePanel")).minHeight);
+        assert("main Add Game card has no horizontal overflow on mobile", document.querySelector(".sgf-input-wrap") && parseFloat(getComputedStyle(document.querySelector(".sgf-input-wrap")).width) <= parseFloat(getComputedStyle(document.getElementById("pastePanel")).width), `${document.querySelector(".sgf-input-wrap") && getComputedStyle(document.querySelector(".sgf-input-wrap")).width}/${document.getElementById("pastePanel") && getComputedStyle(document.getElementById("pastePanel")).width}`);
+        assert("textarea height reduced modestly", parseFloat(getComputedStyle(document.getElementById("sgfInput")).minHeight) <= 140, getComputedStyle(document.getElementById("sgfInput")).minHeight);
+        assert("textarea size is unchanged", getComputedStyle(document.getElementById("sgfInput")).minHeight === "132px" || parseFloat(getComputedStyle(document.getElementById("sgfInput")).minHeight) >= 124, getComputedStyle(document.getElementById("sgfInput")).minHeight);
         assert("sgf textarea text alignment left", getComputedStyle(document.getElementById("sgfInput")).textAlign === "left", getComputedStyle(document.getElementById("sgfInput")).textAlign);
+        const placeholderOverlay = document.querySelector(".sgf-placeholder-overlay");
+        const sgfInputWrap = document.getElementById("sgfInputWrap");
+        assert("Input here centered placeholder overlay renders", placeholderOverlay && placeholderOverlay.textContent.trim() === "Input here" && getComputedStyle(placeholderOverlay).display === "flex" && getComputedStyle(placeholderOverlay).alignItems === "center" && getComputedStyle(placeholderOverlay).justifyContent === "center", placeholderOverlay && placeholderOverlay.outerHTML);
+        document.getElementById("sgfInput").value = "";
+        document.getElementById("sgfInput").dispatchEvent(new Event("input", { bubbles: true }));
+        document.getElementById("sgfInput").focus();
+        assert("Input here disappears when textarea is focused", sgfInputWrap && sgfInputWrap.classList.contains("is-focused"), sgfInputWrap && sgfInputWrap.className);
+        document.getElementById("sgfInput").value = "typed text";
+        document.getElementById("sgfInput").dispatchEvent(new Event("input", { bubbles: true }));
+        assert("typed text uses normal top-left alignment", getComputedStyle(document.getElementById("sgfInput")).textAlign === "left" && sgfInputWrap.classList.contains("has-value"), `${getComputedStyle(document.getElementById("sgfInput")).textAlign}/${sgfInputWrap && sgfInputWrap.className}`);
+        document.getElementById("sgfInput").blur();
+        document.getElementById("sgfInput").value = "";
+        document.getElementById("sgfInput").dispatchEvent(new Event("input", { bubbles: true }));
         assert("menu button exists", Boolean(document.getElementById("menuButton")), "menu");
         assert("backup export menu item exists", Boolean(document.querySelector('[data-tab="backup"]')), "backup menu");
         const finalBoardTitle = document.querySelector("#previewArea .board-title");
@@ -5763,8 +7104,75 @@ PW[MariGo1 (1158)]
         assert("backup storage status present", Boolean(document.querySelector("#tab-backup #storageStatus")), "storage status");
         assert("analysis section present", Boolean(document.getElementById("tab-analysis")) && Boolean(document.getElementById("analysisContent")), "analysis section");
         assert("analysis menu item present", Boolean(document.querySelector('[data-tab="analysis"]')), "analysis menu");
-        assert("clipboard import button exists", Boolean(document.getElementById("clipboardImportButton")) && document.getElementById("clipboardImportButton").textContent.includes("Import from Clipboard"), "clipboard button");
+        assert("Import from Clipboard button removed from home page", !document.getElementById("clipboardImportButton"), "clipboard button removed");
+        assert("circular + upload button renders beside Save Game", Boolean(document.getElementById("sgfFileButton")) && document.getElementById("sgfFileButton").textContent.trim() === "+" && document.getElementById("sgfFileButton").getAttribute("aria-label") === "Upload SGF file", "upload button");
+        assert("hidden SGF file input exists", Boolean(document.getElementById("sgfFileInput")) && document.getElementById("sgfFileInput").multiple === true && String(document.getElementById("sgfFileInput").accept || "").includes(".sgf"), document.getElementById("sgfFileInput") && document.getElementById("sgfFileInput").outerHTML);
+        assert("Save Game and + button group is center-aligned", getComputedStyle(document.querySelector(".save-upload-row")).justifyContent === "center", getComputedStyle(document.querySelector(".save-upload-row")).justifyContent);
+        assert("Save Game button remains dark primary button", document.getElementById("parseButton") && document.getElementById("parseButton").classList.contains("primary-button"), document.getElementById("parseButton") && document.getElementById("parseButton").className);
+        assert("Save Game button is wider than before", document.getElementById("parseButton") && parseFloat(getComputedStyle(document.getElementById("parseButton")).minWidth) >= 170, getComputedStyle(document.getElementById("parseButton")).minWidth);
+        assert("+ button remains same height as Save Game", document.getElementById("sgfFileButton") && document.getElementById("parseButton") && Math.abs(document.getElementById("sgfFileButton").getBoundingClientRect().height - document.getElementById("parseButton").getBoundingClientRect().height) <= 1, `${document.getElementById("sgfFileButton") && document.getElementById("sgfFileButton").getBoundingClientRect().height}/${document.getElementById("parseButton") && document.getElementById("parseButton").getBoundingClientRect().height}`);
+        assert("+ button remains circular", document.getElementById("sgfFileButton") && getComputedStyle(document.getElementById("sgfFileButton")).borderRadius === "50%", getComputedStyle(document.getElementById("sgfFileButton")).borderRadius);
         assert("goquest shortcut help exists", document.body.textContent.includes("Import from GoQuest on iPhone") && document.body.textContent.includes("Share the game") && document.body.textContent.includes("?sgf=[URL-encoded shared text]"), "shortcut help");
+        assert("viewport meta tag is mobile-safe", document.querySelector('meta[name="viewport"]') && document.querySelector('meta[name="viewport"]').getAttribute("content").includes("viewport-fit=cover") && !document.querySelector('meta[name="viewport"]').getAttribute("content").includes("user-scalable=no"), document.querySelector('meta[name="viewport"]') && document.querySelector('meta[name="viewport"]').getAttribute("content"));
+        assert("mobile menu backdrop exists", Boolean(document.getElementById("menuBackdrop")), "menu backdrop");
+        const cssTextForSmoke = `${Array.from(document.querySelectorAll("style")).map(style => style.textContent || "").join("\n")}\n${Array.from(document.styleSheets).flatMap(sheet => Array.from(sheet.cssRules || []).map(rule => rule.cssText || "")).join("\n")}`;
+        assert("mobile menu uses full-width panel or bottom sheet layout", cssTextForSmoke.includes(".menu-panel") && cssTextForSmoke.includes("position: fixed") && (cssTextForSmoke.includes("bottom:") || cssTextForSmoke.includes("width: 100%")), cssTextForSmoke.match(/\.menu-panel[^}]+}/g)?.join(" | ").slice(0, 400));
+        assert("mobile menu keeps same menu items", document.querySelectorAll("#menuPanel .menu-item").length === 5 && ["Add Game", "History", "Stats", "Analysis", "Backup / Export"].every(label => document.getElementById("menuPanel").textContent.includes(label)), document.getElementById("menuPanel") && document.getElementById("menuPanel").textContent);
+        assert("mobile menu does not add new top-level tabs", document.querySelectorAll("#menuPanel .menu-item").length === 5, document.querySelectorAll("#menuPanel .menu-item").length);
+        assert("mobile menu items have larger tap targets", cssTextForSmoke.includes(".menu-item") && cssTextForSmoke.includes("min-height: 48px"), cssTextForSmoke.match(/\.menu-item[^}]+}/g)?.join(" | "));
+        assert("mobile inputs use at least 16px font-size", cssTextForSmoke.includes("font-size: 16px") && cssTextForSmoke.includes("textarea") && cssTextForSmoke.includes("select"), "mobile input CSS");
+        assert("Save Game mobile tap target comfortable", cssTextForSmoke.includes("min-height: 44px") && cssTextForSmoke.includes(".save-upload-row .primary-button"), "save target CSS");
+        assert("+ upload mobile tap target remains circular", cssTextForSmoke.includes(".upload-plus-button") && cssTextForSmoke.includes("width: 44px") && cssTextForSmoke.includes("border-radius: 50%"), "plus target CSS");
+        assert("replay controls mobile tap targets comfortable", cssTextForSmoke.includes(".compact-button") && cssTextForSmoke.includes("min-height: 44px"), "compact button target CSS");
+        assert("mobile app shell uses safe-area side padding", cssTextForSmoke.includes("env(safe-area-inset-left") && cssTextForSmoke.includes("env(safe-area-inset-right"), "safe-area side padding CSS");
+        assert("mobile layout prevents page-level horizontal overflow", cssTextForSmoke.includes("overflow-x: hidden") && cssTextForSmoke.includes("overflow-x: clip"), "overflow CSS");
+        assert("main page titles share mobile header styling", cssTextForSmoke.includes(".page-title") && cssTextForSmoke.includes("font-size: clamp(1.58rem") && cssTextForSmoke.includes("line-height: 1.1"), "page-title mobile CSS");
+        assert("History interval controls are mobile-friendly", cssTextForSmoke.includes(".chart-control-button") && cssTextForSmoke.includes("padding: 10px 12px") && cssTextForSmoke.includes("min-height: 44px"), "chart control CSS");
+        assert("History filters wrap or scroll cleanly", cssTextForSmoke.includes(".history-filters") && cssTextForSmoke.includes("overflow-x: auto") && cssTextForSmoke.includes("-webkit-overflow-scrolling: touch"), "history filter CSS");
+        assert("Open Replay buttons are mobile-friendly", cssTextForSmoke.includes(".history-action .compact-button") && cssTextForSmoke.includes("min-height: 44px"), "history action CSS");
+        assert("Replay board remains square and viewport constrained", cssTextForSmoke.includes("#detailBoardContainer") && cssTextForSmoke.includes("calc(100vw - 48px)") && cssTextForSmoke.includes("aspect-ratio: 1 / 1"), "board sizing CSS");
+        assert("Stats rows stack on mobile", cssTextForSmoke.includes(".stats-row") && cssTextForSmoke.includes("grid-template-columns: 1fr"), "stats row mobile CSS");
+        assert("Tables and chart rows avoid mobile overflow", cssTextForSmoke.includes(".chart-row") && cssTextForSmoke.includes("grid-template-columns: 1fr") && cssTextForSmoke.includes("overflow-wrap: anywhere"), "compact row mobile CSS");
+        assert("Backup export buttons are mobile-friendly", cssTextForSmoke.includes(".utility-area button") && cssTextForSmoke.includes("width: 100%") && cssTextForSmoke.includes("justify-content: center"), "backup button CSS");
+        assert("Replay slider mobile tap target comfortable", cssTextForSmoke.includes(".replay-slider") && cssTextForSmoke.includes("min-height: 44px"), "replay slider CSS");
+
+        if (document.getElementById("brandHomeButton")) {
+          const brandBeforeCount = GoStorage ? await GoStorage.getAllGames().then(g => g.length).catch(() => null) : null;
+          await switchTabForSmoke("history");
+          document.getElementById("sgfInput").value = sampleBlackWin;
+          document.getElementById("pastePanel").classList.add("collapsed");
+          document.getElementById("previewArea").classList.remove("hidden");
+          document.getElementById("previewFacts").textContent = "Previous preview should clear";
+          document.getElementById("warningList").innerHTML = "<li>Previous warning should clear</li>";
+          document.getElementById("warningList").classList.remove("hidden");
+          document.getElementById("boardContainer").textContent = "Previous board should clear";
+          document.getElementById("addMessage").textContent = "Previous import message should clear";
+          document.getElementById("addMessage").classList.add("success");
+          if (document.getElementById("menuPanel") && document.getElementById("menuButton")) {
+            document.getElementById("menuPanel").classList.add("open");
+            document.getElementById("menuButton").setAttribute("aria-expanded", "true");
+          }
+          document.getElementById("brandHomeButton").click();
+          await new Promise(resolve => setTimeout(resolve, 0));
+          const brandAfterCount = GoStorage ? await GoStorage.getAllGames().then(g => g.length).catch(() => null) : null;
+          assert("clicking logo/title opens Add Game", document.getElementById("tab-add").classList.contains("active"), "add tab active");
+          assert("clicking logo/title clears SGF textarea", document.getElementById("sgfInput").value === "", document.getElementById("sgfInput").value.slice(0, 30));
+          assert("clicking logo/title clears previous preview", document.getElementById("previewArea").classList.contains("hidden") && document.getElementById("previewFacts").textContent === "" && document.getElementById("boardContainer").textContent === "", "preview reset");
+          assert("clicking logo/title clears previous parse result", document.getElementById("saveButton").disabled === true, "save disabled");
+          assert("clicking logo/title clears previous success/error message", document.getElementById("addMessage").textContent === "" && !document.getElementById("addMessage").classList.contains("success") && !document.getElementById("addMessage").classList.contains("error"), document.getElementById("addMessage").className);
+          assert("clicking logo/title reopens blank paste panel", !document.getElementById("pastePanel").classList.contains("collapsed"), document.getElementById("pastePanel").className);
+          assert("clicking logo/title closes menu", !document.getElementById("menuPanel") || !document.getElementById("menuPanel").classList.contains("open"), "menu closed");
+          assert("clicking logo/title does not delete saved games", brandBeforeCount === null || brandAfterCount === brandBeforeCount, `${brandBeforeCount} -> ${brandAfterCount}`);
+          await switchTabForSmoke("history");
+          assert("clicking logo/title does not break History", document.getElementById("tab-history").classList.contains("active"), "history active");
+          await switchTabForSmoke("stats");
+          assert("clicking logo/title does not break Stats", document.getElementById("tab-stats").classList.contains("active"), "stats active");
+          await switchTabForSmoke("analysis");
+          assert("clicking logo/title does not break Analysis", document.getElementById("tab-analysis").classList.contains("active"), "analysis active");
+          await switchTabForSmoke("backup");
+          assert("clicking logo/title does not break Backup & Export", document.getElementById("tab-backup").classList.contains("active"), "backup active");
+          await switchTabForSmoke("add");
+        }
 
         if (App && typeof App.extractSharedSgfFromSearch === "function" && typeof App.looksLikeSgfText === "function") {
           const sharedSgf = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+1.5]PB[idfji]PW[ShareSmoke];B[ee];W[de];B[ed];W[])`;
@@ -5790,7 +7198,7 @@ PW[MariGo1 (1158)]
           }
           if (typeof App.loadSharedSgfText === "function") {
             const beforeCount = GoStorage ? await GoStorage.getAllGames().then(g => g.length).catch(() => null) : null;
-            const sharedLoad = await App.loadSharedSgfText(sharedSgf, { cleanUrl: false, autoSave: false, successMessage: "Shared game loaded. Review the preview, then tap Preview & Save Game to save it." });
+            const sharedLoad = await App.loadSharedSgfText(sharedSgf, { cleanUrl: false, autoSave: false, successMessage: "Shared game loaded. Review the preview, then tap Save Game to save it." });
             const afterCount = GoStorage ? await GoStorage.getAllGames().then(g => g.length).catch(() => null) : null;
             assert("shared text fills Add Game textarea", document.getElementById("sgfInput").value === sharedSgf, document.getElementById("sgfInput").value.slice(0, 40));
             assert("shared text triggers valid preview", sharedLoad.previewed === true && !document.getElementById("previewArea").classList.contains("hidden"), JSON.stringify(sharedLoad));
@@ -5846,6 +7254,65 @@ PW[MariGo1 (1158)]
             const invalidAuto = await App.handleParse({ autoSave: true });
             assert("Preview Game does not save invalid SGF", invalidAuto && invalidAuto.parsed === false && document.getElementById("addMessage").textContent.includes("SGF"), JSON.stringify(invalidAuto));
           }
+          if (App && typeof App.handleSgfFileImport === "function" && GoStorage) {
+            const fileOneSgf = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+4.5]PB[idfji]PW[FileOneSmoke]C[file-${Date.now()}-1];B[ee];W[de];B[ed];W[])`;
+            const fileTwoSgf = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[W+2.5]PB[FileTwoSmoke]PW[idfji]C[file-${Date.now()}-2];B[ee];W[de];B[ed];W[dc])`;
+            const fileOneDraft = await GoCore.createGameDraft(fileOneSgf);
+            const fileTwoDraft = await GoCore.createGameDraft(fileTwoSgf);
+            await GoStorage.deleteGame(fileOneDraft.sourceHash).catch(() => {});
+            await GoStorage.deleteGame(fileTwoDraft.sourceHash).catch(() => {});
+            const uploadSummary = await App.handleSgfFileImport([
+              { name: "one.sgf", text: async () => fileOneSgf },
+              { name: "two.sgf", text: async () => fileTwoSgf }
+            ]);
+            assert("multiple valid SGF file upload saves games", uploadSummary.imported === 2 && uploadSummary.duplicates === 0 && uploadSummary.failed === 0, JSON.stringify(uploadSummary));
+            const savedFileOne = await GoStorage.getGame(fileOneDraft.sourceHash).catch(() => null);
+            const savedFileTwo = await GoStorage.getGame(fileTwoDraft.sourceHash).catch(() => null);
+            assert("single valid SGF file upload saves game", Boolean(savedFileOne) && Boolean(savedFileTwo), JSON.stringify({ one: Boolean(savedFileOne), two: Boolean(savedFileTwo) }));
+            const mixedSummary = await App.handleSgfFileImport([
+              { name: "duplicate.sgf", text: async () => fileOneSgf },
+              { name: "bad.sgf", text: async () => "not a go game" }
+            ]);
+            assert("duplicate SGF file upload is skipped", mixedSummary.duplicates === 1, JSON.stringify(mixedSummary));
+            assert("invalid SGF file upload counted as parse failure", mixedSummary.failed === 1, JSON.stringify(mixedSummary));
+            assert("upload summary shows imported/skipped/failed counts", /Imported 0 games\. Skipped 1 duplicates\. 1 files could not be parsed\./.test(document.getElementById("addMessage").textContent), document.getElementById("addMessage").textContent);
+            assert("upload summary hides opponent names", !document.getElementById("addMessage").textContent.includes("FileOneSmoke") && !document.getElementById("addMessage").textContent.includes("FileTwoSmoke"), document.getElementById("addMessage").textContent);
+            await GoStorage.deleteGame(fileOneDraft.sourceHash).catch(() => {});
+            await GoStorage.deleteGame(fileTwoDraft.sourceHash).catch(() => {});
+          }
+          if (App && typeof App.handlePastedSgfAutoSave === "function" && GoStorage) {
+            const pastedSgf = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+5.5]PB[idfji]PW[PasteSmoke]C[paste-${Date.now()}];B[ee];W[de];B[ed];W[])`;
+            const pastedDraft = await GoCore.createGameDraft(pastedSgf);
+            await GoStorage.deleteGame(pastedDraft.sourceHash).catch(() => {});
+            document.getElementById("sgfInput").value = pastedSgf;
+            const pasteResult = await App.handlePastedSgfAutoSave(pastedSgf);
+            const pastedSaved = await GoStorage.getGame(pastedDraft.sourceHash).catch(() => null);
+            assert("paste valid SGF auto-saves", pasteResult && pasteResult.saved === true && Boolean(pastedSaved), JSON.stringify(pasteResult));
+            const countAfterPaste = (await GoStorage.getAllGames()).length;
+            const samePasteResult = await App.handlePastedSgfAutoSave(pastedSgf);
+            const countAfterSamePaste = (await GoStorage.getAllGames()).length;
+            assert("same pasted SGF does not repeatedly save", samePasteResult.reason === "same-paste" && countAfterSamePaste === countAfterPaste, JSON.stringify({ samePasteResult, countAfterPaste, countAfterSamePaste }));
+            document.getElementById("brandHomeButton").click();
+            await new Promise(resolve => setTimeout(resolve, 0));
+            document.getElementById("sgfInput").value = pastedSgf;
+            const duplicatePasteResult = await App.handlePastedSgfAutoSave(pastedSgf);
+            const countAfterDuplicatePaste = (await GoStorage.getAllGames()).length;
+            assert("paste duplicate SGF does not save again", duplicatePasteResult.duplicate === true && countAfterDuplicatePaste === countAfterPaste, JSON.stringify({ duplicatePasteResult, countAfterDuplicatePaste, countAfterPaste }));
+            const invalidPaste = await App.handlePastedSgfAutoSave("not a go game");
+            assert("paste invalid SGF does not save", invalidPaste.reason === "not-sgf" && document.getElementById("addMessage").textContent.includes("does not look like an SGF game"), JSON.stringify(invalidPaste));
+            assert("History updates after pasted/file save", Boolean(document.getElementById("historyContent")), "history content");
+            assert("Stats updates after pasted/file save", Boolean(document.getElementById("statsContent")), "stats content");
+            assert("Analysis updates after pasted/file save", Boolean(document.getElementById("analysisContent")), "analysis content");
+            await GoStorage.deleteGame(pastedDraft.sourceHash).catch(() => {});
+          }
+          if (document.getElementById("sgfFileButton") && document.getElementById("sgfFileInput")) {
+            let fileClickCalled = false;
+            const originalClick = document.getElementById("sgfFileInput").click;
+            document.getElementById("sgfFileInput").click = () => { fileClickCalled = true; };
+            document.getElementById("sgfFileButton").click();
+            document.getElementById("sgfFileInput").click = originalClick;
+            assert("+ button opens hidden SGF file input", fileClickCalled === true, String(fileClickCalled));
+          }
         }
 
         assert("storage warning present", document.body.textContent.includes("Games are stored locally in this browser"), "storage warning");
@@ -5896,7 +7363,63 @@ PW[MariGo1 (1158)]
       assert("stats margin fields", statsFixture.averageWinMargin !== null && statsFixture.averageLossMargin !== null && statsFixture.closeGamesRecord && statsFixture.mediumGamesRecord && statsFixture.largeGamesRecord, JSON.stringify({ win: statsFixture.averageWinMargin, loss: statsFixture.averageLossMargin, close: statsFixture.closeGamesRecord, med: statsFixture.mediumGamesRecord, large: statsFixture.largeGamesRecord }));
       assert("stats color performance fields", Number.isFinite(Number(statsFixture.averageMovesAsBlack)) && Number.isFinite(Number(statsFixture.averageMovesAsWhite)) && Number.isFinite(Number(statsFixture.averageCapturesAsBlack)) && Number.isFinite(Number(statsFixture.averageCapturesAsWhite)), JSON.stringify({ mb: statsFixture.averageMovesAsBlack, mw: statsFixture.averageMovesAsWhite, cb: statsFixture.averageCapturesAsBlack, cw: statsFixture.averageCapturesAsWhite }));
       assert("stats move profile fields", statsFixture.userMoveProfile && Number.isFinite(Number(statsFixture.userMoveProfile.userCornerMoves)) && statsFixture.opponentMoveProfile && Number.isFinite(Number(statsFixture.opponentMoveProfile.opponentCornerMoves)), JSON.stringify({ user: statsFixture.userMoveProfile, opp: statsFixture.opponentMoveProfile }));
-      assert("stats final board material fields", Number.isFinite(Number(statsFixture.averageFinalStonesByUser)) && Number.isFinite(Number(statsFixture.averageFinalStonesByOpponent)) && Number.isFinite(Number(statsFixture.averageStoneDifferential)) && Number.isFinite(Number(statsFixture.gamesEndingWithMoreUserStones)), JSON.stringify({ user: statsFixture.averageFinalStonesByUser, opp: statsFixture.averageFinalStonesByOpponent, diff: statsFixture.averageStoneDifferential }));
+      if (App && typeof App.buildStatsViewHtml === "function") {
+        const statsGame = (result, index, overrides = {}) => ({
+          ...black,
+          sourceHash: `stats-${result}-${index}`,
+          gameFingerprint: `stats-fp-${result}-${index}`,
+          userResult: result,
+          resultMethod: result === "Draw" ? "draw" : (index % 4 === 0 ? "resignation" : "score"),
+          userMargin: result === "Win" ? 3 : result === "Loss" ? -2 : 0,
+          userColor: index % 2 === 0 ? "Black" : "White",
+          moveCount: index % 3 === 0 ? 76 : 44 + index,
+          captureCountsByUser: index % 5,
+          captureCountsByOpponent: index % 4 === 0 ? 6 : index % 3,
+          capturesByUser: index % 5,
+          capturesByOpponent: index % 4 === 0 ? 6 : index % 3,
+          largestCaptureByOpponent: index % 4 === 0 ? 4 : 1,
+          captureDifferential: (index % 5) - (index % 4 === 0 ? 6 : index % 3),
+          openingSignature3: index < 4 ? "B D4 · W F6 · B E5" : `Opening ${index}`,
+          openingSignature5: index < 4 ? "B D4 · W F6 · B E5 · W C3 · B G4" : `Opening ${index}`,
+          favorite: index === 0,
+          reviewLater: index === 1,
+          notes: index === 2 ? "note" : "",
+          tags: index === 3 ? ["tag"] : [],
+          importedAt: `2026-03-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`,
+          ...overrides
+        });
+        const nineKnownStats = Array.from({ length: 9 }, (_, i) => statsGame(i % 3 === 0 ? "Draw" : i % 2 === 0 ? "Win" : "Loss", i));
+        const tenKnownStats = Array.from({ length: 10 }, (_, i) => statsGame(i % 3 === 0 ? "Draw" : i % 2 === 0 ? "Win" : "Loss", i));
+        const unknownStatsRow = statsGame("Unknown", 99, { resultMethod: "unknown", userMargin: null });
+        const under10Html = App.buildStatsViewHtml([...nineKnownStats, unknownStatsRow]);
+        const tenHtml = App.buildStatsViewHtml([...tenKnownStats, unknownStatsRow]);
+        assert("Stats shows only basic stats with fewer than 10 known-result games", under10Html.includes("Main Overview") && under10Html.includes("Save at least 10 completed games") && !under10Html.includes("Review Signals") && !under10Html.includes("Opening Stats"), under10Html.slice(0, 900));
+        assert("Stats shows detailed sections at exactly 10 known-result games", tenHtml.includes("Results Breakdown") && tenHtml.includes("Review Signals") && tenHtml.includes("Opening Stats") && tenHtml.includes("Library"), tenHtml.slice(0, 900));
+        assert("Unknown does not appear in visible Stats tab", !/Unknown/.test(under10Html + tenHtml), (under10Html + tenHtml).match(/Unknown/g));
+        assert("Results Breakdown excludes Unknown", !App.buildResultsBreakdownData([...tenKnownStats, unknownStatsRow]).some(row => row.label === "Unknown"), JSON.stringify(App.buildResultsBreakdownData([...tenKnownStats, unknownStatsRow])));
+        assert("Results Breakdown removed old explanatory text", !tenHtml.includes("Draws and unknown results are shown separately."), tenHtml.slice(0, 900));
+        const resultRows = App.buildResultsBreakdownData(tenKnownStats);
+        assert("Results Breakdown counts and percentages are correct", resultRows.reduce((sum, row) => sum + row.value, 0) === 10 && resultRows.every(row => Number.isFinite(row.percentage)), JSON.stringify(resultRows));
+        assert("Main Overview shows required stats", ["Total games", "Record", "Win rate", "Average margin", "Average moves", "Current streak"].every(label => tenHtml.includes(label)), tenHtml.slice(0, 900));
+        const noTimeoutHtml = App.buildStatsViewHtml(tenKnownStats.map((game, i) => ({ ...game, resultMethod: i % 2 === 0 ? "score" : "resignation" })));
+        assert("Result Methods hides zero timeout/forfeit rows", !noTimeoutHtml.includes(">Timeout<") && !noTimeoutHtml.includes(">Forfeit<") && noTimeoutHtml.includes(">Score<") && noTimeoutHtml.includes(">Resignation<"), noTimeoutHtml.slice(0, 1500));
+        assert("Color Performance compact rows render", tenHtml.includes("Color Performance") && tenHtml.includes(">Black<") && tenHtml.includes(">White<") && tenHtml.includes("More games needed before comparing color performance") === false, tenHtml.slice(0, 1600));
+        const oneColorHtml = App.buildStatsViewHtml(tenKnownStats.map(game => ({ ...game, userColor: "Black" })));
+        assert("Color conclusions hidden until enough games per color", oneColorHtml.includes("More games needed before comparing color performance."), oneColorHtml.slice(0, 1600));
+        assert("Capture Stats sample sizes render", tenHtml.includes("Capture Stats") && (tenHtml.includes("Small sample") || tenHtml.includes("WR when you out-capture")), tenHtml.slice(0, 2200));
+        const lowSampleCaptureHtml = App.buildStatsViewHtml(tenKnownStats.map((game, i) => ({ ...game, captureDifferential: i < 2 ? 1 : 0, captureCountsByUser: i < 2 ? 2 : 0, captureCountsByOpponent: 0 })));
+        assert("Capture win-rate small sample guard works", lowSampleCaptureHtml.includes("Small sample"), lowSampleCaptureHtml.slice(0, 2200));
+        assert("Move Profile shows percentages", tenHtml.includes("Move Profile") && /\d+\.\d%/.test(tenHtml), tenHtml.slice(0, 2600));
+        assert("You vs Opponent move profile comparison works if data exists", tenHtml.includes("Area") && tenHtml.includes("You") && tenHtml.includes("Opponent"), tenHtml.slice(0, 2600));
+        assert("Opening table renders", tenHtml.includes("Opening pattern") && tenHtml.includes("B D4"), tenHtml.slice(0, 3200));
+        assert("Best/worst opening hidden until repeated sample threshold", !tenHtml.includes("Best opening") && !tenHtml.includes("Worst opening"), tenHtml.slice(0, 3200));
+        assert("Review Signals section renders", tenHtml.includes("Review Signals") && tenHtml.includes("Close losses") && tenHtml.includes("Repeated opening losses"), tenHtml.slice(0, 3800));
+        assert("Review Signals counts are correct", tenHtml.includes("Opponent captured 5+ total") && tenHtml.includes("Opponent single capture 3+"), tenHtml.slice(0, 3800));
+        assert("Library stats render compactly if fields exist", tenHtml.includes("Library item") && tenHtml.includes("Favorites") && tenHtml.includes("Games with notes"), tenHtml.slice(0, 4300));
+        const oldStatsHtml = App.buildStatsViewHtml(tenKnownStats.map(game => ({ ...game, captureCountsByUser: undefined, captureCountsByOpponent: undefined, openingSignature3: undefined, openingSignature5: undefined, userCornerMoves: undefined, userSideMoves: undefined, userCenterMoves: undefined })));
+        assert("Old records with missing fields do not break Stats", oldStatsHtml.includes("Main Overview") && oldStatsHtml.includes("Capture Stats") && oldStatsHtml.includes("Move Profile"), oldStatsHtml.slice(0, 1400));
+        assert("No NaN / undefined / null appears in Stats", !/(NaN|undefined|null)/i.test(under10Html + tenHtml + oldStatsHtml), (under10Html + tenHtml + oldStatsHtml).match(/NaN|undefined|null/i));
+      }
       const analysisFixture = GoCore.computeAnalysis([black, white, resign, drawn, merged]);
       assert("analysis empty-safe with games", analysisFixture.summary.gamesAnalyzed === 5 && analysisFixture.summary.overallRecord, JSON.stringify(analysisFixture.summary));
       assert("analysis recent form insight available", typeof analysisFixture.summary.recentForm === "string" && !analysisFixture.summary.recentForm.includes("undefined"), analysisFixture.summary.recentForm);
@@ -5937,29 +7460,144 @@ PW[MariGo1 (1158)]
       const unsafeAnalysisPhrases = ["bl" + "under", "bad " + "move", "dead " + "group", "losing " + "move", "correct " + "move", "engine " + "says", "pro" + "ved", "def" + "initely"];
       assert("analysis visible text uses safe wording", !new RegExp(unsafeAnalysisPhrases.join("|"), "i").test(visibleAnalysisText), visibleAnalysisText);
 
+      if (App && typeof App.buildAnalysisViewHtml === "function" && typeof App.buildAnalysisGuideViewHtml === "function") {
+        const analysisKnownRows = Array.from({ length: 10 }, (_, i) => ({
+          ...black,
+          sourceHash: `analysis-known-${i}`,
+          gameFingerprint: `analysis-fp-${i}`,
+          userResult: i % 5 === 0 ? "Draw" : i % 2 === 0 ? "Win" : "Loss",
+          resultMethod: i % 5 === 0 ? "draw" : "score",
+          userMargin: i % 2 === 0 ? 2.5 : -2.5,
+          importedAt: `2026-03-${String(i + 1).padStart(2, "0")}T00:00:00.000Z`
+        }));
+        const unknownAnalysisRow = { ...analysisKnownRows[0], sourceHash: "analysis-unknown", gameFingerprint: "analysis-unknown-fp", userResult: "Unknown", resultMethod: "unknown", userMargin: null };
+        const under10AnalysisHtml = App.buildAnalysisViewHtml([...analysisKnownRows.slice(0, 9), unknownAnalysisRow]);
+        const tenAnalysisHtml = App.buildAnalysisViewHtml([...analysisKnownRows, unknownAnalysisRow]);
+        const guideScreenHtml = App.buildAnalysisGuideViewHtml(analysisKnownRows);
+        assert("Analysis uses known-result sample-size gating", under10AnalysisHtml.includes("Known-result games") && under10AnalysisHtml.includes("9") && !under10AnalysisHtml.includes("Top Findings"), under10AnalysisHtml.slice(0, 1200));
+        assert("Unknown results are skipped for Analysis gating", !under10AnalysisHtml.includes("10 completed") && !under10AnalysisHtml.includes("Top Findings"), under10AnalysisHtml.slice(0, 1200));
+        assert("Analysis shows basic review signals only under 10 known-result games", under10AnalysisHtml.includes("Basic Review Signals") && under10AnalysisHtml.includes("Review Priorities") && !under10AnalysisHtml.includes("Mistake Pattern Signals") && !under10AnalysisHtml.includes("Opening Patterns"), under10AnalysisHtml.slice(0, 1800));
+        assert("Analysis shows deeper sections at exactly 10 known-result games", ["Top Findings", "Review Priority Distribution", "Mistake Pattern Signals", "Opening Patterns"].every(text => tenAnalysisHtml.includes(text)) && tenAnalysisHtml.includes("Color &amp; Rating Patterns"), tenAnalysisHtml.slice(0, 2200));
+        const removedAnalysisStrings = [
+          "Very limited analysis. Save more games before treating these as patterns.",
+          "Priority is calculated from local rule-based review signals.",
+          "Not enough repeated openings yet."
+        ];
+        assert("removed exact Analysis text strings", removedAnalysisStrings.every(text => !under10AnalysisHtml.includes(text) && !tenAnalysisHtml.includes(text) && !guideScreenHtml.includes(text)), removedAnalysisStrings.filter(text => under10AnalysisHtml.includes(text) || tenAnalysisHtml.includes(text) || guideScreenHtml.includes(text)).join(" | "));
+        assert("main Analysis page no longer shows Replay Review Guide section", !/>Replay Review Guide<\/h2>/.test(tenAnalysisHtml) && tenAnalysisHtml.includes("Open Replay Review Guide"), tenAnalysisHtml.slice(-900));
+        assert("main Analysis page no longer shows Universal checklist section", !tenAnalysisHtml.includes("Universal 9×9 Replay Checklist"), tenAnalysisHtml.slice(-900));
+        assert("main Analysis page no longer shows Self-Review Questions section", !tenAnalysisHtml.includes("Self-Review Questions"), tenAnalysisHtml.slice(-900));
+        assert("main Analysis page no longer shows Suggested Focus section", !tenAnalysisHtml.includes("Suggested Focus"), tenAnalysisHtml.slice(-900));
+        assert("Open Replay Review Guide button renders at bottom of Analysis", /Open Replay Review Guide/.test(tenAnalysisHtml) && tenAnalysisHtml.trim().endsWith("</div>"), tenAnalysisHtml.slice(-900));
+        assert("Replay Review Guide screen is not in main menu", !document.querySelector('[data-tab="replay-guide"]') && !document.querySelector('[data-tab="analysis-guide"]'), "no top-level guide tab");
+        assert("Replay Review Guide screen shows guide/checklist/question content", guideScreenHtml.includes("Replay Review Guide") && guideScreenHtml.includes("Back to Analysis") && guideScreenHtml.includes("Universal 9×9 Replay Checklist") && guideScreenHtml.includes("Self-Review Questions"), guideScreenHtml.slice(0, 1600));
+        const analysisCleanText = under10AnalysisHtml + tenAnalysisHtml + guideScreenHtml;
+        assert("No opponent names in Analysis or guide screen", !/(MariGo1|BlackPlayer|WhitePlayer|Other \()/i.test(analysisCleanText), analysisCleanText.match(/MariGo1|BlackPlayer|WhitePlayer|Other \(/i));
+        assert("No NaN / undefined / null in Analysis or guide screen", !/(NaN|undefined|null)/i.test(analysisCleanText), analysisCleanText.match(/NaN|undefined|null/i));
+        assert("Unsafe wording does not appear in Analysis or guide screen", !new RegExp(unsafeAnalysisPhrases.join("|"), "i").test(analysisCleanText), analysisCleanText.match(new RegExp(unsafeAnalysisPhrases.join("|"), "i")));
+      }
+
       if (App && typeof App.buildWinRateTrendData === "function") {
-        const trendEmpty = App.buildWinRateTrendData([]);
-        assert("history win-rate chart data handles 0 games", trendEmpty.points.length === 0 && trendEmpty.latestRate === null, JSON.stringify(trendEmpty));
-        const trendOne = App.buildWinRateTrendData([black]);
-        assert("history win-rate chart data handles 1 game", trendOne.points.length === 1 && trendOne.latestRate === 100, JSON.stringify(trendOne));
         const drawDraft = await GoCore.createGameDraft(draw);
-        const trendSample = App.buildWinRateTrendData([black, white, drawDraft]);
-        assert("history win-rate chart data handles sample games and draw", trendSample.points.length === 3 && Math.abs(trendSample.latestRate - 50) < 0.01, JSON.stringify(trendSample));
-        assert("history win-rate SVG renders", App.renderWinRateTrendChart([black, white]).includes("chart-line") && App.renderWinRateTrendChart([black]).includes("Save at least 2 games"), "trend html");
+        const chartGame = (result, index) => ({
+          ...black,
+          sourceHash: `chart-${result}-${index}`,
+          gameFingerprint: `chart-fp-${result}-${index}`,
+          userResult: result,
+          resultMethod: result === "Unknown" ? "unknown" : result === "Draw" ? "draw" : "score",
+          userColor: index % 2 ? "White" : "Black",
+          moveCount: 30 + index,
+          importedAt: `2026-02-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`
+        });
+        const fourteenKnown = Array.from({ length: 14 }, (_, i) => chartGame(i % 3 === 0 ? "Draw" : i % 2 === 0 ? "Win" : "Loss", i));
+        const fifteenKnown = [...fourteenKnown, chartGame("Win", 14)];
+        const sixteenKnown = [...fifteenKnown, chartGame("Loss", 15)];
+        const withUnknown = [...fifteenKnown.slice(0, 7), chartGame("Unknown", 99), ...fifteenKnown.slice(7)];
+        const twentyFiveKnown = Array.from({ length: 25 }, (_, i) => chartGame(i % 3 === 0 ? "Draw" : i % 2 === 0 ? "Win" : "Loss", i));
+        const fiftyKnown = Array.from({ length: 50 }, (_, i) => chartGame(i % 5 === 0 ? "Draw" : i % 2 === 0 ? "Win" : "Loss", i));
+
+        const pageTitleCss = typeof document !== "undefined" ? Array.from(document.styleSheets).flatMap(sheet => Array.from(sheet.cssRules || []).map(rule => rule.cssText || "")).join("\n") : "";
+        assert("all main tab titles use consistent page-header styling", pageTitleCss.includes(".page-title") && document.querySelectorAll(".page-title").length >= 5, pageTitleCss.slice(0, 1200));
+        assert("Add Game title still says Add 9x9 GO Game:", document.querySelector(".landing-title") && document.querySelector(".landing-title").textContent.trim() === "Add 9x9 GO Game:", document.querySelector(".landing-title") && document.querySelector(".landing-title").textContent);
+        assert("History title uses page-header styling", document.querySelector("#tab-history > .panel > .page-title") && document.querySelector("#tab-history > .panel > .page-title").textContent.trim() === "History", "history title");
+        assert("Stats title uses page-header styling", document.querySelector("#tab-stats > .panel > .page-title") && document.querySelector("#tab-stats > .panel > .page-title").textContent.trim() === "Stats", "stats title");
+        assert("Analysis title uses page-header styling", document.querySelector("#tab-analysis > .panel > .page-title") && document.querySelector("#tab-analysis > .panel > .page-title").textContent.trim() === "Analysis", "analysis title");
+        assert("Backup title uses page-header styling", document.querySelector("#tab-backup > .panel > .page-title") && document.querySelector("#tab-backup > .panel > .page-title").textContent.trim() === "Backup & Export", "backup title");
+
+        const trendEmpty = App.buildWinRateTrendData([]);
+        assert("history win-rate chart hidden with 0 games", trendEmpty.chartVisible === false && trendEmpty.points.length === 0, JSON.stringify(trendEmpty));
+        const trendOne = App.buildWinRateTrendData([black]);
+        assert("history win-rate chart hidden with 1 known game", trendOne.chartVisible === false && trendOne.points.length === 0, JSON.stringify(trendOne));
+        const trendFourteen = App.buildWinRateTrendData(fourteenKnown);
+        assert("History chart hidden with fewer than 15 known-result games", trendFourteen.chartVisible === false && App.renderWinRateTrendChart(fourteenKnown) === "", JSON.stringify(trendFourteen));
+        const trendFifteen = App.buildWinRateTrendData(fifteenKnown);
+        const firstFifteenScore = fifteenKnown.reduce((sum, game) => sum + (game.userResult === "Win" ? 1 : game.userResult === "Draw" ? 0.5 : 0), 0);
+        assert("History chart appears at exactly 15 known-result games", trendFifteen.chartVisible === true && trendFifteen.points.length === 1, JSON.stringify(trendFifteen));
+        assert("first chart point uses first 15 known-result games", Math.abs(trendFifteen.points[0].winRate - (firstFifteenScore / 15) * 100) < 0.01, JSON.stringify({ point: trendFifteen.points[0], firstFifteenScore }));
+        assert("draw counts as 0.5", Math.abs(App.buildWinRateTrendData(Array.from({ length: 15 }, (_, i) => chartGame("Draw", i))).latestRate - 50) < 0.01, JSON.stringify(App.buildWinRateTrendData(Array.from({ length: 15 }, (_, i) => chartGame("Draw", i)))));
+        assert("unknown results are skipped", App.buildWinRateTrendData(withUnknown).knownGames === 15 && App.buildWinRateTrendData(withUnknown).skippedGames === 1, JSON.stringify(App.buildWinRateTrendData(withUnknown)));
+        assert("single graph mode is Rolling 15", trendFifteen.mode === "rolling15" && trendFifteen.points[0].mode === "Rolling 15", JSON.stringify(trendFifteen));
+        assert("Last 10 interval removed", App.availableWinRateIntervals(50).every(row => row.key !== "10" && row.label !== "Last 10"), JSON.stringify(App.availableWinRateIntervals(50)));
+        assert("Last 25 appears only when enough games exist", App.availableWinRateIntervals(24).every(row => row.key !== "25") && App.availableWinRateIntervals(25).some(row => row.key === "25"), JSON.stringify({ a: App.availableWinRateIntervals(24), b: App.availableWinRateIntervals(25) }));
+        assert("Last 50 appears only when enough games exist", App.availableWinRateIntervals(49).every(row => row.key !== "50") && App.availableWinRateIntervals(50).some(row => row.key === "50"), JSON.stringify({ a: App.availableWinRateIntervals(49), b: App.availableWinRateIntervals(50) }));
+        assert("default interval behavior works", App.buildWinRateTrendData(fifteenKnown).intervalKey === "all" && App.buildWinRateTrendData(twentyFiveKnown).intervalKey === "25" && App.buildWinRateTrendData(fiftyKnown).intervalKey === "50", JSON.stringify({ fifteen: App.buildWinRateTrendData(fifteenKnown).intervalKey, twentyFive: App.buildWinRateTrendData(twentyFiveKnown).intervalKey, fifty: App.buildWinRateTrendData(fiftyKnown).intervalKey }));
+        assert("All time behavior works", App.buildWinRateTrendData(twentyFiveKnown, { interval: "all" }).resultStrip.length === 25, JSON.stringify(App.buildWinRateTrendData(twentyFiveKnown, { interval: "all" }).resultStrip));
+        const axis = App.computeDynamicYAxis([55, 60, 65]);
+        assert("Y-axis dynamic zoom calculation works", axis.min <= 55 && axis.max >= 65 && axis.max - axis.min >= 20, JSON.stringify(axis));
+        assert("Y-axis clamps between 0 and 100", App.computeDynamicYAxis([-10, 110]).min >= 0 && App.computeDynamicYAxis([-10, 110]).max <= 100, JSON.stringify(App.computeDynamicYAxis([-10, 110])));
+        assert("Y-axis uses clean 5% increments", [axis.min, axis.mid, axis.max].every(value => value % 5 === 0), JSON.stringify(axis));
+        assert("Y-axis minimum range prevents misleading over-zoom", App.computeDynamicYAxis([72, 74, 76]).max - App.computeDynamicYAxis([72, 74, 76]).min >= 20, JSON.stringify(App.computeDynamicYAxis([72, 74, 76])));
+        const trendHtml = App.renderWinRateTrendChart(twentyFiveKnown);
+        assert("History chart title renders as Win Rate Over Time", trendHtml.includes("Win Rate Over Time"), trendHtml.slice(0, 500));
+        assert("top-right chart value shows percentage only", /<div class="chart-headline">\d+(?:\.\d)?%<\/div>/.test(trendHtml), trendHtml.slice(0, 500));
+        assert("Latest value text is removed", !trendHtml.includes("Latest value"), trendHtml.slice(0, 500));
+        assert("title and chart value are more prominent", document.body.innerHTML.includes(".win-rate-chart .chart-title") && document.body.innerHTML.includes(".win-rate-chart .chart-headline") && document.body.innerHTML.includes("clamp(1.18rem"), "win-rate title/headline CSS");
+        assert("Win Rate subtitle text is removed", !trendHtml.includes("Draws count as 0.5") && !trendHtml.includes("Rolling 10 win rate") && !trendHtml.includes("Cumulative win rate"), trendHtml.slice(0, 800));
+        assert("Rolling 10 explanatory note is removed", !trendHtml.includes("Rolling 10 starts once 10 completed games are available."), trendHtml.slice(0, 900));
+        assert("Showing completed games note removed", !/Showing \d+ completed games\. Unknown results skipped\./.test(trendHtml), trendHtml.slice(0, 900));
+        assert("Oldest label removed", !trendHtml.includes(">Oldest<"), trendHtml.slice(0, 1200));
+        assert("Newest label removed", !trendHtml.includes(">Newest<"), trendHtml.slice(0, 1200));
+        assert("Rolling 10 / Cumulative toggle removed", !trendHtml.includes("Rolling 10") && !trendHtml.includes("Cumulative") && !trendHtml.includes("Chart mode"), trendHtml.slice(0, 1400));
+        assert("interval controls remain below chart", trendHtml.indexOf("<svg") >= 0 && trendHtml.indexOf("Chart interval") > trendHtml.indexOf("</svg>"), trendHtml.slice(0, 1600));
+        assert("single available interval hides controls", !App.renderWinRateTrendChart(fifteenKnown).includes("Chart interval"), App.renderWinRateTrendChart(fifteenKnown).slice(0, 1200));
+        assert("W/L/D strip remains removed", !/result-strip|result-pill/.test(trendHtml), trendHtml.slice(0, 1000));
+        assert("result data still skips unknown results", App.buildWinRateTrendData(withUnknown).resultStrip.every(item => item.result !== "Unknown"), JSON.stringify(App.buildWinRateTrendData(withUnknown).resultStrip));
+        assert("chart line uses dark navy", trendHtml.includes("chart-line") && document.body.innerHTML.includes(".win-rate-chart .chart-line") && document.body.innerHTML.includes("stroke: var(--text)"), trendHtml.slice(0, 500));
+        assert("visible point size remains reduced", /r="2\.2"/.test(trendHtml) && /r="2\.8"/.test(trendHtml), trendHtml.slice(0, 1000));
+        assert("invisible tap targets remain usable", trendHtml.includes("chart-point-hit") && /r="10"/.test(trendHtml), trendHtml.slice(0, 1000));
+        assert("axis labels use smaller balanced sizing", document.body.innerHTML.includes(".chart-axis-label") && document.body.innerHTML.includes("font-size: 8px"), "axis CSS");
+        assert("latest point label is removed from graph", !trendHtml.includes("chart-latest-label"), trendHtml.slice(0, 500));
+        assert("hover/tap point detail includes win-rate percentage", /\d+\.\d% · Game/.test(trendHtml) && trendHtml.includes("Mode: Rolling 15"), trendHtml.slice(0, 900));
+        assert("tooltip does not show opponent names", !/(MariGo1|BlackPlayer|WhitePlayer|Other \()/i.test(trendHtml), trendHtml.slice(0, 900));
+        assert("History chart handles 100+ games", App.renderWinRateTrendChart(Array.from({ length: 110 }, (_, i) => chartGame(i % 2 === 0 ? "Win" : "Loss", i))).includes("chart-line"), "100+ render");
+        assert("History chart handles all wins/all losses/all draws", ["Win", "Loss", "Draw"].every(result => App.buildWinRateTrendData(Array.from({ length: 15 }, (_, i) => chartGame(result, i))).chartVisible), "uniform results");
+        assert("chart updates after save", App.buildWinRateTrendData(sixteenKnown).points.length > App.buildWinRateTrendData(fifteenKnown).points.length, JSON.stringify({ before: App.buildWinRateTrendData(fifteenKnown).points.length, after: App.buildWinRateTrendData(sixteenKnown).points.length }));
+        assert("chart updates after delete", App.buildWinRateTrendData(fourteenKnown).points.length < App.buildWinRateTrendData(fifteenKnown).points.length, JSON.stringify({ before: App.buildWinRateTrendData(fifteenKnown).points.length, after: App.buildWinRateTrendData(fourteenKnown).points.length }));
+        assert("chart updates after import", App.buildWinRateTrendData(twentyFiveKnown).resultStrip.length === 25 && App.renderWinRateTrendChart(twentyFiveKnown).includes("Last 25"), App.renderWinRateTrendChart(twentyFiveKnown).slice(0, 700));
+        assert("history filters remain visible and usable", document.body.innerHTML.includes("history-filters") && ["All", "Favorites", "Review Later", "Reviewed", "Not Reviewed", "Wins", "Losses", "Black", "White"].every(label => document.body.innerHTML.includes(label)), "history filters");
         assert("stats result breakdown chart data", App.buildResultsBreakdownData([black, white, drawDraft]).some(row => row.label === "Wins" && row.value === 1), JSON.stringify(App.buildResultsBreakdownData([black, white, drawDraft])));
         assert("stats color performance chart data", App.buildColorPerformanceChartData([black, white]).length === 2, JSON.stringify(App.buildColorPerformanceChartData([black, white])));
         assert("stats capture differential buckets", App.buildCaptureDifferentialBuckets([black, white]).reduce((sum, row) => sum + row.value, 0) === 2, JSON.stringify(App.buildCaptureDifferentialBuckets([black, white])));
         assert("stats game length buckets", App.buildGameLengthDistribution([black, white]).reduce((sum, row) => sum + row.value, 0) === 2, JSON.stringify(App.buildGameLengthDistribution([black, white])));
         assert("analysis priority chart data", App.buildAnalysisPriorityDistribution([black, white]).reduce((sum, row) => sum + row.value, 0) === 2, JSON.stringify(App.buildAnalysisPriorityDistribution([black, white])));
         const chartText = [
-          App.renderWinRateTrendChart([black, white, drawDraft]),
+          App.renderWinRateTrendChart(twentyFiveKnown),
           App.renderBarChart("Results Breakdown", App.buildResultsBreakdownData([black, white, drawDraft])),
           App.renderBarChart("Loss Profile Tags", App.buildLossProfileTagData([black, white, drawDraft]))
         ].join(" ");
         assert("chart text hides opponent names", !/(MariGo1|BlackPlayer|WhitePlayer|Other \()/i.test(chartText), chartText.slice(0, 300));
-        assert("chart text clean", !/(NaN|undefined|null)/i.test(chartText), chartText.slice(0, 300));
-        const oldChartData = App.buildWinRateTrendData([{ ...black, captureLog: undefined, openingSignature3: undefined, finalBoard: undefined }]);
-        assert("charts handle old saved records", oldChartData.points.length === 1 && oldChartData.latestRate === 100, JSON.stringify(oldChartData));
+        assert("chart text clean", !/(NaN|undefined|null|Invalid Date)/i.test(chartText), chartText.slice(0, 300));
+        const oldChartRows = Array.from({ length: 15 }, (_, i) => ({ ...chartGame(i % 2 === 0 ? "Win" : "Loss", i), captureLog: undefined, openingSignature3: undefined, finalBoard: undefined }));
+        const oldChartData = App.buildWinRateTrendData(oldChartRows);
+        assert("charts handle old saved records", oldChartData.chartVisible === true && oldChartData.points.length === 1, JSON.stringify(oldChartData));
+        assert("History date/time format resembles Jun 30, 12:30 AM", App.formatImportedAtShort({ importedAt: "2026-06-30T00:30:00" }) === "Jun 30, 12:30 AM", App.formatImportedAtShort({ importedAt: "2026-06-30T00:30:00" }));
+        assert("old records missing importedAt do not show Invalid Date", App.formatImportedAtShort({}) === "Date unavailable" && !/Invalid Date|NaN|undefined|null/i.test(App.formatImportedAtShort({})), App.formatImportedAtShort({}));
+        const timestampCsv = App.buildCsvSummary([{ ...black, importedAt: "2026-06-30T00:30:00" }]);
+        assert("CSV export includes readable saved/imported date", timestampCsv.split("\n")[0].includes("importedAt") && timestampCsv.split("\n")[0].includes("savedDate") && timestampCsv.includes("Jun 30, 12:30 AM"), timestampCsv.split("\n").slice(0, 2).join("\n"));
+        const historyDateHtml = `<article class="history-card"><div></div><div class="history-action"><span class="history-timestamp">${App.formatImportedAtShort({ importedAt: "2026-06-30T00:30:00" })}</span><button class="compact-button secondary-button">Open Replay</button></div></article>`;
+        assert("History date/time renders before Open Replay button", historyDateHtml.indexOf("Jun 30, 12:30 AM") >= 0 && historyDateHtml.indexOf("Jun 30, 12:30 AM") < historyDateHtml.indexOf("Open Replay"), historyDateHtml);
+        const cssTextForHistorySmoke = typeof document !== "undefined" ? Array.from(document.styleSheets).flatMap(sheet => Array.from(sheet.cssRules || []).map(rule => rule.cssText || "")).join("\n") : "";
+        assert("History Open Replay button aligns with corresponding game card", cssTextForHistorySmoke.includes(".history-card") && cssTextForHistorySmoke.includes("align-items: center") && cssTextForHistorySmoke.includes(".history-action"), "history flex alignment CSS");
       }
 
       const unknown = await GoCore.createGameDraft(missingResult);
