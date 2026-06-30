@@ -2876,20 +2876,25 @@
       // Parses RE[...] into winner/method/margin without computing a score.
       function parseOfficialResult(rawResult) {
         const raw = stripOuterWhitespace(rawResult || "");
+        const normalized = raw.replace(/\s+/g, " ").trim();
         if (!raw) return { resultRaw: "", winner: null, method: "unknown", margin: null, marginText: null };
-        if (/^(draw|jigo|0)$/i.test(raw)) {
+        if (/^(draw|jigo|0)$/i.test(normalized)) {
           return { resultRaw: raw, winner: "Draw", method: "draw", margin: 0, marginText: "0" };
         }
-        if (/^(void|no result)$/i.test(raw)) {
+        if (/^(void|no result)$/i.test(normalized)) {
           return { resultRaw: raw, winner: null, method: "void", margin: null, marginText: null };
         }
-        if (/^\?+$/.test(raw)) {
+        if (/^\?+$/.test(normalized)) {
           return { resultRaw: raw, winner: null, method: "unknown", margin: null, marginText: null };
         }
-        const match = raw.match(/^([BW])\s*\+\s*(.+)$/i);
+
+        const plusMatch = normalized.match(/^([BW])\s*\+\s*(.+)$/i);
+        const spacedMatch = normalized.match(/^([BW])\s+(.+)$/i);
+        const match = plusMatch || spacedMatch;
         if (!match) return { resultRaw: raw, winner: null, method: "unknown", margin: null, marginText: null };
+
         const winner = match[1].toUpperCase() === "B" ? "Black" : "White";
-        const detail = match[2].trim();
+        const detail = String(match[2] || "").replace(/\s+/g, " ").trim();
         if (/^(R|Resign|Resignation)$/i.test(detail)) {
           return { resultRaw: raw, winner, method: "resignation", margin: null, marginText: null };
         }
@@ -2903,7 +2908,7 @@
           return { resultRaw: raw, winner, method: "unknown", margin: null, marginText: null };
         }
         const numeric = Number(detail);
-        if (Number.isFinite(numeric)) {
+        if (plusMatch && Number.isFinite(numeric)) {
           return { resultRaw: raw, winner, method: "score", margin: numeric, marginText: detail };
         }
         return { resultRaw: raw, winner, method: "unknown", margin: null, marginText: null };
@@ -7344,6 +7349,43 @@ PW[MariGo1 (1158)]
       const resign = await GoCore.createGameDraft(whiteResignWin);
       assert("white resignation result", resign.userResult === "Win" && resign.resultMethod === "resignation", GoCore.formatResultForRecord(resign));
       assert("white resignation margin text", GoCore.formatMarginForRecord(resign) === "resignation", GoCore.formatMarginForRecord(resign));
+
+      const goquestWhiteResignWin = await GoCore.createGameDraft(`(;GM[1]SZ[9]KM[7]RU[Chinese]RE[W R]
+PB[Syarurun2001 (1147)]
+PW[idfji (1184)]
+;B[dd];W[ee])`);
+      assert("GoQuest RE[W R] imports as White resignation win", goquestWhiteResignWin.boardSize === 9 && goquestWhiteResignWin.rules === "Chinese" && String(goquestWhiteResignWin.komi) === "7" && goquestWhiteResignWin.userColor === "White" && goquestWhiteResignWin.winner === "White" && goquestWhiteResignWin.userResult === "Win" && goquestWhiteResignWin.resultMethod === "resignation", JSON.stringify({ userColor: goquestWhiteResignWin.userColor, winner: goquestWhiteResignWin.winner, result: goquestWhiteResignWin.userResult, method: goquestWhiteResignWin.resultMethod, label: GoCore.formatResultForRecord(goquestWhiteResignWin) }));
+      assert("GoQuest RE[W R] result is not Unknown", GoCore.formatResultForRecord(goquestWhiteResignWin) !== "Unknown" && goquestWhiteResignWin.resultMethodLabel === "resignation", GoCore.formatResultForRecord(goquestWhiteResignWin));
+
+      const resultCompatibilityCases = [
+        { name: "RE[W R] with user as White", re: "W R", pb: "Other", pw: "idfji", userColor: "White", winner: "White", userResult: "Win", method: "resignation" },
+        { name: "RE[B R] with user as Black", re: "B R", pb: "idfji", pw: "Other", userColor: "Black", winner: "Black", userResult: "Win", method: "resignation" },
+        { name: "RE[W R] with user as Black", re: "W R", pb: "idfji", pw: "Other", userColor: "Black", winner: "White", userResult: "Loss", method: "resignation" },
+        { name: "RE[B R] with user as White", re: "B R", pb: "Other", pw: "idfji", userColor: "White", winner: "Black", userResult: "Loss", method: "resignation" },
+        { name: "RE[W+R] still works", re: "W+R", pb: "Other", pw: "idfji", userColor: "White", winner: "White", userResult: "Win", method: "resignation" },
+        { name: "RE[B+R] still works", re: "B+R", pb: "idfji", pw: "Other", userColor: "Black", winner: "Black", userResult: "Win", method: "resignation" },
+        { name: "RE[W+Resign] still works", re: "W+Resign", pb: "Other", pw: "idfji", userColor: "White", winner: "White", userResult: "Win", method: "resignation" },
+        { name: "RE[B+Resign] still works", re: "B+Resign", pb: "idfji", pw: "Other", userColor: "Black", winner: "Black", userResult: "Win", method: "resignation" },
+        { name: "RE[ W R ] whitespace variation", re: " W R ", pb: "Other", pw: "idfji", userColor: "White", winner: "White", userResult: "Win", method: "resignation" },
+        { name: "RE[W  R] whitespace variation", re: "W  R", pb: "Other", pw: "idfji", userColor: "White", winner: "White", userResult: "Win", method: "resignation" },
+        { name: "RE[w r] lowercase variation", re: "w r", pb: "Other", pw: "idfji", userColor: "White", winner: "White", userResult: "Win", method: "resignation" },
+        { name: "RE[b resign] lowercase resign variation", re: "b resign", pb: "idfji", pw: "Other", userColor: "Black", winner: "Black", userResult: "Win", method: "resignation" },
+        { name: "RE[W resignation] whitespace resignation variation", re: "W resignation", pb: "Other", pw: "idfji", userColor: "White", winner: "White", userResult: "Win", method: "resignation" },
+        { name: "RE[B+resignation] plus resignation variation", re: "B+resignation", pb: "idfji", pw: "Other", userColor: "Black", winner: "Black", userResult: "Win", method: "resignation" }
+      ];
+      for (const testCase of resultCompatibilityCases) {
+        const game = await GoCore.createGameDraft(`(;GM[1]SZ[9]KM[7]RU[Chinese]RE[${testCase.re}]PB[${testCase.pb}]PW[${testCase.pw}];B[dd];W[ee])`);
+        assert(testCase.name, game.userColor === testCase.userColor && game.winner === testCase.winner && game.userResult === testCase.userResult && game.resultMethod === testCase.method, JSON.stringify({ re: testCase.re, userColor: game.userColor, winner: game.winner, result: game.userResult, method: game.resultMethod }));
+      }
+
+      const scoreCompatibilityWhite = await GoCore.createGameDraft(`(;GM[1]SZ[9]KM[7]RU[Chinese]RE[W+7.5]PB[Other]PW[idfji];B[dd];W[ee])`);
+      assert("RE[W+7.5] score result still works", scoreCompatibilityWhite.userResult === "Win" && scoreCompatibilityWhite.resultMethod === "score" && scoreCompatibilityWhite.userMargin === 7.5, JSON.stringify({ result: scoreCompatibilityWhite.userResult, method: scoreCompatibilityWhite.resultMethod, margin: scoreCompatibilityWhite.userMargin }));
+      const scoreCompatibilityBlack = await GoCore.createGameDraft(`(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+3.5]PB[idfji]PW[Other];B[dd];W[ee])`);
+      assert("RE[B+3.5] score result still works", scoreCompatibilityBlack.userResult === "Win" && scoreCompatibilityBlack.resultMethod === "score" && scoreCompatibilityBlack.userMargin === 3.5, JSON.stringify({ result: scoreCompatibilityBlack.userResult, method: scoreCompatibilityBlack.resultMethod, margin: scoreCompatibilityBlack.userMargin }));
+      const drawCompatibility = await GoCore.createGameDraft(`(;GM[1]SZ[9]KM[7]RU[Chinese]RE[jigo]PB[idfji]PW[Other];B[dd];W[ee])`);
+      assert("jigo draw result still works", drawCompatibility.userResult === "Draw" && drawCompatibility.resultMethod === "draw", JSON.stringify({ result: drawCompatibility.userResult, method: drawCompatibility.resultMethod }));
+      const unknownCompatibility = await GoCore.createGameDraft(`(;GM[1]SZ[9]KM[7]RU[Chinese]RE[UnusualResult]PB[idfji]PW[Other];B[dd];W[ee])`);
+      assert("unknown result remains safely handled", unknownCompatibility.userResult === "Unknown" && unknownCompatibility.resultMethod === "unknown", JSON.stringify({ result: unknownCompatibility.userResult, method: unknownCompatibility.resultMethod }));
 
       const timeWin = await GoCore.createGameDraft(blackTimeWin);
       assert("time result method", timeWin.userResult === "Win" && timeWin.resultMethod === "time", GoCore.formatResultForRecord(timeWin));
