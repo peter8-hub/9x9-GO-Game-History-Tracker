@@ -449,6 +449,28 @@
       margin-top: 6px;
     }
 
+    .clipboard-import-banner {
+      width: min(100%, 500px);
+      margin: -4px auto 0;
+      padding: 11px 13px;
+      border: 1px solid rgba(31, 41, 51, 0.12);
+      border-radius: 14px;
+      background: rgba(255, 250, 242, 0.92);
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .clipboard-import-row {
+      margin-top: 0;
+    }
+
+    .clipboard-import-button {
+      width: min(100%, 500px);
+      min-height: 42px;
+    }
+
     .save-upload-row {
       align-items: stretch;
       justify-content: center;
@@ -2374,6 +2396,7 @@
         <div id="addGameShell" class="add-game-shell">
           <div id="pastePanel" class="panel paste-panel paste-landing">
             <h2 class="landing-title page-title">Add 9x9 GO Game:</h2>
+            <div id="clipboardImportBanner" class="clipboard-import-banner hidden" role="status">Game copied to clipboard. Tap Import from Clipboard.</div>
             <div id="sgfInputWrap" class="sgf-input-wrap">
               <textarea id="sgfInput" aria-label="Paste SGF game" spellcheck="false" autocomplete="off" placeholder="Input here"></textarea>
               <span class="sgf-placeholder-overlay" aria-hidden="true">Input here</span>
@@ -2382,6 +2405,9 @@
               <button id="parseButton" class="primary-button">Save Game</button>
               <button id="sgfFileButton" class="secondary-button upload-plus-button" type="button" aria-label="Upload SGF file">+</button>
               <input id="sgfFileInput" class="hidden-file-input" type="file" accept=".sgf,text/plain,application/x-go-sgf" multiple hidden>
+            </div>
+            <div class="action-row paste-action-row clipboard-import-row">
+              <button id="clipboardImportButton" class="secondary-button clipboard-import-button" type="button">Import from Clipboard</button>
             </div>
           </div>
           <p class="add-support-note">Supports 9x9 SGF GO Files</p>
@@ -2453,10 +2479,11 @@
               <summary>Import from GoQuest on iPhone</summary>
               <ol>
                 <li>In GoQuest, tap <strong>Share the game</strong>.</li>
-                <li>Tap <strong>Copy</strong>, or use an iOS Shortcut that passes the shared text to this app.</li>
-                <li>Open the tracker and paste into <strong>Input here</strong>.</li>
+                <li>Use an iOS Shortcut to copy the shared SGF text to the clipboard.</li>
+                <li>Open this tracker with <code>?clip=1</code>, then tap <strong>Import from Clipboard</strong>.</li>
               </ol>
-              <p><strong>Advanced:</strong> create an iOS Shortcut that accepts Share Sheet input and opens this tracker URL with <code>?sgf=[URL-encoded shared text]</code>.</p>
+              <p><strong>Shortcut URL:</strong> <code>https://peter8-hub.github.io/9x9-GO-Game-History-Tracker/?clip=1</code></p>
+              <p><strong>Advanced automatic URL import:</strong> this tracker still supports <code>?sgf64=[Base64 URL-encoded shared text]</code>, plus older <code>?sgf=</code>, <code>?game=</code>, and <code>?import=</code> URLs.</p>
             </details>
           </div>
         </div>
@@ -4448,6 +4475,7 @@
         },
         addGameShell: document.getElementById("addGameShell"),
         pastePanel: document.getElementById("pastePanel"),
+        clipboardImportBanner: document.getElementById("clipboardImportBanner"),
         sgfInputWrap: document.getElementById("sgfInputWrap"),
         sgfInput: document.getElementById("sgfInput"),
         parseButton: document.getElementById("parseButton"),
@@ -4549,6 +4577,25 @@
         return /^(1|true|yes|y)$/i.test(String(value || "").trim());
       }
 
+      function hasClipboardLandingFlag(search = window.location.search) {
+        try {
+          const params = new URLSearchParams(String(search || ""));
+          return isTruthyUrlFlag(params.get("clip"));
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function showClipboardLandingMode() {
+        if (!els.clipboardImportBanner) return;
+        els.clipboardImportBanner.classList.remove("hidden");
+        showMessage(els.addMessage, "info", "Game copied to clipboard. Tap Import from Clipboard.");
+      }
+
+      function hideClipboardLandingMode() {
+        if (els.clipboardImportBanner) els.clipboardImportBanner.classList.add("hidden");
+      }
+
       function findSgfCollectionEnd(text, start) {
         let depth = 0;
         let inValue = false;
@@ -4624,6 +4671,7 @@
           showMessage(els.addMessage, "error", options.invalidMessage || "Shared text does not look like an SGF game.");
           return { loaded: false, previewed: false, reason: "not-sgf" };
         }
+        hideClipboardLandingMode();
         els.sgfInput.value = value;
         updateSgfPlaceholderState();
         if (els.addGameShell) els.addGameShell.classList.remove("is-previewing");
@@ -4668,9 +4716,14 @@
         return { found: true, key: shared.key, autoSave, ...result };
       }
 
-      async function handleClipboardImport(readTextOverride = null) {
-        const reader = readTextOverride
-          || (navigator.clipboard && typeof navigator.clipboard.readText === "function" ? () => navigator.clipboard.readText() : null);
+      async function handleClipboardImport(readTextOverride = null, options = {}) {
+        if (readTextOverride && typeof readTextOverride === "object") {
+          options = readTextOverride;
+          readTextOverride = null;
+        }
+        const reader = typeof readTextOverride === "function"
+          ? readTextOverride
+          : (navigator.clipboard && typeof navigator.clipboard.readText === "function" ? () => navigator.clipboard.readText() : null);
         if (!reader) {
           showMessage(els.addMessage, "error", "Clipboard access was blocked. Paste the game manually.");
           return { ok: false, reason: "blocked" };
@@ -4684,11 +4737,13 @@
             return { ok: false, reason: "not-sgf" };
           }
           const result = await loadSharedSgfText(sgfText, {
-            cleanUrl: false,
-            autoSave: true,
+            cleanUrl: Boolean(options && options.cleanUrl),
+            autoSave: options && options.autoSave === false ? false : true,
             invalidMessage: "Clipboard does not look like an SGF game.",
+            successMessage: options && options.autoSave === false ? "Clipboard game loaded. Review the preview, then tap Save Game to save it." : undefined,
             saveSuccessMessage: "Game saved to History."
           });
+          if (result && result.previewed) hideClipboardLandingMode();
           return { ok: Boolean(result.previewed), ...result };
         } catch (error) {
           await switchTab("add");
@@ -5688,6 +5743,7 @@
 
       function resetAddForm() {
         currentDraft = null;
+        hideClipboardLandingMode();
         els.sgfInput.value = "";
         updateSgfPlaceholderState();
         els.pastePanel.classList.remove("collapsed");
@@ -7035,7 +7091,7 @@
           if (event.key === "Escape") closeMenu();
         });
         els.parseButton.addEventListener("click", handleParse);
-        if (els.clipboardImportButton) els.clipboardImportButton.addEventListener("click", () => handleClipboardImport());
+        if (els.clipboardImportButton) els.clipboardImportButton.addEventListener("click", () => handleClipboardImport({ cleanUrl: hasClipboardLandingFlag() }));
         if (els.sgfFileButton && els.sgfFileInput) els.sgfFileButton.addEventListener("click", event => {
           event.preventDefault();
           els.sgfFileInput.value = "";
@@ -7069,11 +7125,15 @@
         await renderStats();
         await renderAnalysis();
         await renderStorageStatus();
-        await handleUrlSharedImport();
+        const urlImport = await handleUrlSharedImport();
+        if (!(urlImport && urlImport.found) && hasClipboardLandingFlag()) {
+          await switchTab("add");
+          showClipboardLandingMode();
+        }
       }
 
       document.addEventListener("DOMContentLoaded", init);
-      return { renderBoard, renderHistory, renderStats, renderAnalysis, renderStorageStatus, createZipBlob, safeSgfFilename, buildSgfArchiveFiles, buildJsonBackupPayload, buildCsvSummary, buildWinRateTrendData, computeDynamicYAxis, availableWinRateIntervals, buildStatsViewHtml, buildAnalysisViewHtml, buildAnalysisGuideViewHtml, buildResultsBreakdownData, buildColorPerformanceChartData, buildResultMethodBreakdownData, buildCaptureDifferentialBuckets, buildGameLengthDistribution, buildAnalysisPriorityDistribution, buildLossProfileTagData, buildCaptureComparisonData, renderWinRateTrendChart, renderBarChart, formatImportedAtShort, extractSgfText, looksLikeSgfText, extractSharedSgfFromSearch, loadSharedSgfText, handleUrlSharedImport, handleClipboardImport, handleSgfFileImport, handlePastedSgfAutoSave, handleParse };
+      return { renderBoard, renderHistory, renderStats, renderAnalysis, renderStorageStatus, createZipBlob, safeSgfFilename, buildSgfArchiveFiles, buildJsonBackupPayload, buildCsvSummary, buildWinRateTrendData, computeDynamicYAxis, availableWinRateIntervals, buildStatsViewHtml, buildAnalysisViewHtml, buildAnalysisGuideViewHtml, buildResultsBreakdownData, buildColorPerformanceChartData, buildResultMethodBreakdownData, buildCaptureDifferentialBuckets, buildGameLengthDistribution, buildAnalysisPriorityDistribution, buildLossProfileTagData, buildCaptureComparisonData, renderWinRateTrendChart, renderBarChart, formatImportedAtShort, extractSgfText, looksLikeSgfText, extractSharedSgfFromSearch, loadSharedSgfText, handleUrlSharedImport, hasClipboardLandingFlag, showClipboardLandingMode, hideClipboardLandingMode, handleClipboardImport, handleSgfFileImport, handlePastedSgfAutoSave, handleParse };
     })();
 
     async function runSmokeTests() {
@@ -7234,7 +7294,8 @@ PW[MariGo1 (1158)]
         assert("backup storage status present", Boolean(document.querySelector("#tab-backup #storageStatus")), "storage status");
         assert("analysis section present", Boolean(document.getElementById("tab-analysis")) && Boolean(document.getElementById("analysisContent")), "analysis section");
         assert("analysis menu item present", Boolean(document.querySelector('[data-tab="analysis"]')), "analysis menu");
-        assert("Import from Clipboard button removed from home page", !document.getElementById("clipboardImportButton"), "clipboard button removed");
+        assert("Import from Clipboard button exists on home page", Boolean(document.getElementById("clipboardImportButton")) && document.getElementById("clipboardImportButton").textContent.trim() === "Import from Clipboard", "clipboard import button");
+        assert("clipboard import landing banner exists", Boolean(document.getElementById("clipboardImportBanner")) && document.getElementById("clipboardImportBanner").textContent.includes("Game copied to clipboard"), "clipboard landing banner");
         assert("circular + upload button renders beside Save Game", Boolean(document.getElementById("sgfFileButton")) && document.getElementById("sgfFileButton").textContent.trim() === "+" && document.getElementById("sgfFileButton").getAttribute("aria-label") === "Upload SGF file", "upload button");
         assert("hidden SGF file input exists", Boolean(document.getElementById("sgfFileInput")) && document.getElementById("sgfFileInput").multiple === true && String(document.getElementById("sgfFileInput").accept || "").includes(".sgf"), document.getElementById("sgfFileInput") && document.getElementById("sgfFileInput").outerHTML);
         assert("Save Game and + button group is center-aligned", getComputedStyle(document.querySelector(".save-upload-row")).justifyContent === "center", getComputedStyle(document.querySelector(".save-upload-row")).justifyContent);
@@ -7242,7 +7303,7 @@ PW[MariGo1 (1158)]
         assert("Save Game button is wider than before", document.getElementById("parseButton") && parseFloat(getComputedStyle(document.getElementById("parseButton")).minWidth) >= 170, getComputedStyle(document.getElementById("parseButton")).minWidth);
         assert("+ button remains same height as Save Game", document.getElementById("sgfFileButton") && document.getElementById("parseButton") && Math.abs(document.getElementById("sgfFileButton").getBoundingClientRect().height - document.getElementById("parseButton").getBoundingClientRect().height) <= 1, `${document.getElementById("sgfFileButton") && document.getElementById("sgfFileButton").getBoundingClientRect().height}/${document.getElementById("parseButton") && document.getElementById("parseButton").getBoundingClientRect().height}`);
         assert("+ button remains circular", document.getElementById("sgfFileButton") && getComputedStyle(document.getElementById("sgfFileButton")).borderRadius === "50%", getComputedStyle(document.getElementById("sgfFileButton")).borderRadius);
-        assert("goquest shortcut help exists", document.body.textContent.includes("Import from GoQuest on iPhone") && document.body.textContent.includes("Share the game") && document.body.textContent.includes("?sgf=[URL-encoded shared text]"), "shortcut help");
+        assert("goquest shortcut help exists", document.body.textContent.includes("Import from GoQuest on iPhone") && document.body.textContent.includes("Share the game") && document.body.textContent.includes("?clip=1") && document.body.textContent.includes("?sgf64=[Base64 URL-encoded shared text]"), "shortcut help");
         assert("viewport meta tag is mobile-safe", document.querySelector('meta[name="viewport"]') && document.querySelector('meta[name="viewport"]').getAttribute("content").includes("viewport-fit=cover") && !document.querySelector('meta[name="viewport"]').getAttribute("content").includes("user-scalable=no"), document.querySelector('meta[name="viewport"]') && document.querySelector('meta[name="viewport"]').getAttribute("content"));
         assert("mobile menu backdrop exists", Boolean(document.getElementById("menuBackdrop")), "menu backdrop");
         const cssTextForSmoke = `${Array.from(document.querySelectorAll("style")).map(style => style.textContent || "").join("\n")}\n${Array.from(document.styleSheets).flatMap(sheet => Array.from(sheet.cssRules || []).map(rule => rule.cssText || "")).join("\n")}`;

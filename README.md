@@ -4,7 +4,7 @@ A static, browser-only personal history tracker for 9×9 Go SGF games.
 
 ## What it does
 
-- Paste a 9×9 SGF game.
+- Paste a 9×9 SGF game, import from clipboard, or upload SGF files.
 - Preview the parsed result and final board before saving.
 - Save games locally in your browser history.
 - Reopen saved games for replay.
@@ -27,9 +27,31 @@ No server, account, backend, API, npm, build step, or internet connection is req
 1. Open the app.
 2. Go to **Add Game**.
 3. Paste a 9×9 SGF into the box.
-4. Click **Preview Game**.
-5. Check the result summary and final board.
-6. Click **Save to History**.
+4. Tap **Save Game**.
+
+Valid games are parsed, previewed, and saved to local history. Duplicates are skipped.
+
+## iPhone clipboard import
+
+This version adds a clipboard import path for GoQuest sharing.
+
+Recommended shortcut flow:
+
+```text
+Receive Apps and Text input from Share Sheet
+If there’s no input: Get Clipboard
+
+Get text from Shortcut Input
+
+Copy Text to Clipboard
+
+Open URL:
+https://peter8-hub.github.io/9x9-GO-Game-History-Tracker/?clip=1
+```
+
+Then tap **Import from Clipboard** inside the tracker. This one tap gives the browser the required user action to read clipboard text.
+
+The app still supports automatic URL import with `?autosave=1&sgf64=[URL Encoded Base64 Text]`, plus older `?sgf=`, `?game=`, and `?import=` parameters.
 
 The app is hard-coded to detect the user name `idfji` from `PB[...]` or `PW[...]`.
 
