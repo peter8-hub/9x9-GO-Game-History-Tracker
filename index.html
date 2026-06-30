@@ -2381,7 +2381,7 @@
             <div class="action-row paste-action-row save-upload-row">
               <button id="parseButton" class="primary-button">Save Game</button>
               <button id="sgfFileButton" class="secondary-button upload-plus-button" type="button" aria-label="Upload SGF file">+</button>
-              <input id="sgfFileInput" class="hidden-file-input" type="file" accept=".sgf,application/x-go-sgf,text/plain" multiple hidden>
+              <input id="sgfFileInput" class="hidden-file-input" type="file" accept=".sgf,text/plain,application/x-go-sgf" multiple hidden>
             </div>
           </div>
           <p class="add-support-note">Supports 9x9 SGF GO Files</p>
@@ -4501,8 +4501,55 @@
 
       const SHARE_IMPORT_PARAMS = ["sgf", "game", "import"];
 
+      function decodePotentialSgfText(value) {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+        if (!/%[0-9A-Fa-f]{2}/.test(raw)) return raw;
+        try {
+          const decoded = decodeURIComponent(raw);
+          return decoded && /\(\s*;|GM\s*\[|SZ\s*\[/i.test(decoded) ? decoded.trim() : raw;
+        } catch (error) {
+          return raw;
+        }
+      }
+
+      function findSgfCollectionEnd(text, start) {
+        let depth = 0;
+        let inValue = false;
+        let escaped = false;
+        for (let i = start; i < text.length; i++) {
+          const ch = text[i];
+          if (inValue) {
+            if (escaped) escaped = false;
+            else if (ch === "\\") escaped = true;
+            else if (ch === "]") inValue = false;
+            continue;
+          }
+          if (ch === "[") {
+            inValue = true;
+            continue;
+          }
+          if (ch === "(") depth += 1;
+          else if (ch === ")") {
+            depth -= 1;
+            if (depth === 0) return i + 1;
+          }
+        }
+        return text.length;
+      }
+
+      function extractSgfText(value) {
+        const text = decodePotentialSgfText(value);
+        if (!text) return "";
+        const root = text.match(/\(\s*;/);
+        if (!root || typeof root.index !== "number") return "";
+        const start = root.index;
+        const end = findSgfCollectionEnd(text, start);
+        return text.slice(start, end).trim();
+      }
+
       function looksLikeSgfText(value) {
-        const text = String(value || "").trim();
+        const text = extractSgfText(value);
         if (!text || text.length < 6) return false;
         if (!/\(\s*;/.test(text)) return false;
         if (!/\[[\s\S]*\]/.test(text)) return false;
@@ -4533,9 +4580,9 @@
       }
 
       async function loadSharedSgfText(text, options = {}) {
-        const value = String(text || "").trim();
+        const value = extractSgfText(text);
         await switchTab("add");
-        if (!looksLikeSgfText(value)) {
+        if (!value || !looksLikeSgfText(value)) {
           showMessage(els.addMessage, "error", options.invalidMessage || "Shared text does not look like an SGF game.");
           return { loaded: false, previewed: false, reason: "not-sgf" };
         }
@@ -4584,12 +4631,13 @@
         }
         try {
           const text = await reader();
-          if (!looksLikeSgfText(text)) {
+          const sgfText = extractSgfText(text);
+          if (!sgfText || !looksLikeSgfText(sgfText)) {
             await switchTab("add");
             showMessage(els.addMessage, "error", "Clipboard does not look like an SGF game.");
             return { ok: false, reason: "not-sgf" };
           }
-          const result = await loadSharedSgfText(text, {
+          const result = await loadSharedSgfText(sgfText, {
             cleanUrl: false,
             autoSave: true,
             invalidMessage: "Clipboard does not look like an SGF game.",
@@ -4643,7 +4691,12 @@
         for (const file of files) {
           try {
             const text = await readSgfFileText(file);
-            const draft = await GoCore.createGameDraft(text);
+            const sgfText = extractSgfText(text);
+            if (!sgfText || !looksLikeSgfText(sgfText)) {
+              summary.failed += 1;
+              continue;
+            }
+            const draft = await GoCore.createGameDraft(sgfText);
             if (await GoStorage.gameExists(draft)) {
               summary.duplicates += 1;
               continue;
@@ -4680,31 +4733,47 @@
         }
       }
 
-      async function handlePastedSgfAutoSave(pastedText = "") {
-        const value = String(pastedText || els.sgfInput.value || "").trim();
-        if (!value) return { attempted: false, reason: "empty" };
-        if (value === lastPasteAutoSaveText) return { attempted: false, reason: "same-paste" };
-        lastPasteAutoSaveText = value;
-        if (!looksLikeSgfText(value)) {
-          currentDraft = null;
-          els.previewArea.classList.add("hidden");
-          showMessage(els.addMessage, "error", "Pasted text does not look like an SGF game.");
+      async function handlePastedSgfAutoSave(pastedText = "", options = {}) {
+        const raw = String(pastedText || els.sgfInput.value || "");
+        if (!raw.trim()) return { attempted: false, reason: "empty" };
+        const value = extractSgfText(raw);
+        if (!value || !looksLikeSgfText(value)) {
+          if (options && options.showInvalid !== false) {
+            currentDraft = null;
+            els.previewArea.classList.add("hidden");
+            showMessage(els.addMessage, "error", "Input does not look like a valid 9x9 SGF game.");
+          }
           return { attempted: true, parsed: false, reason: "not-sgf" };
         }
+        if (value === lastPasteAutoSaveText) return { attempted: false, reason: "same-paste" };
+        lastPasteAutoSaveText = value;
         els.sgfInput.value = value;
         updateSgfPlaceholderState();
-        return handleParse({ autoSave: true, successMessage: "Game saved to History." });
+        return handleParse({ autoSave: true, successMessage: "Game saved to History.", duplicateMessage: "Duplicate game skipped." });
+      }
+
+      function scheduleTextareaImport(source = "input", rawText = "", options = {}) {
+        if (pasteAutoSaveTimer) window.clearTimeout(pasteAutoSaveTimer);
+        const delay = source === "paste" ? 120 : 360;
+        pasteAutoSaveTimer = window.setTimeout(() => {
+          const current = String(rawText || els.sgfInput.value || "");
+          const maybeSgf = extractSgfText(current);
+          if (source === "input" && !maybeSgf) return;
+          handlePastedSgfAutoSave(current, { showInvalid: source !== "input" && options.showInvalid !== false });
+        }, delay);
       }
 
       function handleSgfPaste(event) {
         const pasted = event && event.clipboardData && typeof event.clipboardData.getData === "function"
           ? event.clipboardData.getData("text/plain")
           : "";
-        if (pasteAutoSaveTimer) window.clearTimeout(pasteAutoSaveTimer);
-        pasteAutoSaveTimer = window.setTimeout(() => {
-          const value = String(pasted || els.sgfInput.value || "").trim();
-          handlePastedSgfAutoSave(value);
-        }, 80);
+        scheduleTextareaImport("paste", pasted, { showInvalid: true });
+      }
+
+      function handleSgfInput() {
+        updateSgfPlaceholderState();
+        const value = String(els.sgfInput.value || "");
+        if (extractSgfText(value)) scheduleTextareaImport("input", value, { showInvalid: false });
       }
 
       function readLastBackupAt() {
@@ -5518,8 +5587,14 @@
         els.saveButton.disabled = true;
         const autoSave = options && options.autoSave === false ? false : true;
         const keepPastePanel = Boolean(options && options.keepPastePanel);
-        const sgf = els.sgfInput.value;
+        const rawSgf = els.sgfInput.value;
+        const sgf = extractSgfText(rawSgf);
         try {
+          if (!sgf || !looksLikeSgfText(sgf)) throw new Error("Input does not look like a valid 9x9 SGF game.");
+          if (sgf !== rawSgf) {
+            els.sgfInput.value = sgf;
+            updateSgfPlaceholderState();
+          }
           const draft = await GoCore.createGameDraft(sgf);
           currentDraft = draft;
           if (keepPastePanel) {
@@ -5538,7 +5613,7 @@
           try {
             if (await GoStorage.gameExists(draft)) {
               els.saveButton.disabled = true;
-              showMessage(els.addMessage, "info", "This game is already saved.");
+              showMessage(els.addMessage, "info", (options && options.duplicateMessage) || "This game is already saved.");
               return { parsed: true, saved: false, duplicate: true };
             }
             if (!autoSave) {
@@ -6915,7 +6990,11 @@
         });
         els.parseButton.addEventListener("click", handleParse);
         if (els.clipboardImportButton) els.clipboardImportButton.addEventListener("click", () => handleClipboardImport());
-        if (els.sgfFileButton && els.sgfFileInput) els.sgfFileButton.addEventListener("click", () => els.sgfFileInput.click());
+        if (els.sgfFileButton && els.sgfFileInput) els.sgfFileButton.addEventListener("click", event => {
+          event.preventDefault();
+          els.sgfFileInput.value = "";
+          els.sgfFileInput.click();
+        });
         if (els.sgfFileInput) els.sgfFileInput.addEventListener("change", handleSgfFileInputChange);
         els.saveButton.addEventListener("click", handleSave);
         els.newGameButton.addEventListener("click", resetAddForm);
@@ -6930,7 +7009,7 @@
         els.sgfInput.addEventListener("keydown", event => {
           if ((event.metaKey || event.ctrlKey) && event.key === "Enter") handleParse();
         });
-        els.sgfInput.addEventListener("input", updateSgfPlaceholderState);
+        els.sgfInput.addEventListener("input", handleSgfInput);
         els.sgfInput.addEventListener("focus", updateSgfPlaceholderState);
         els.sgfInput.addEventListener("blur", updateSgfPlaceholderState);
         els.sgfInput.addEventListener("paste", handleSgfPaste);
@@ -6948,7 +7027,7 @@
       }
 
       document.addEventListener("DOMContentLoaded", init);
-      return { renderBoard, renderHistory, renderStats, renderAnalysis, renderStorageStatus, createZipBlob, safeSgfFilename, buildSgfArchiveFiles, buildJsonBackupPayload, buildCsvSummary, buildWinRateTrendData, computeDynamicYAxis, availableWinRateIntervals, buildStatsViewHtml, buildAnalysisViewHtml, buildAnalysisGuideViewHtml, buildResultsBreakdownData, buildColorPerformanceChartData, buildResultMethodBreakdownData, buildCaptureDifferentialBuckets, buildGameLengthDistribution, buildAnalysisPriorityDistribution, buildLossProfileTagData, buildCaptureComparisonData, renderWinRateTrendChart, renderBarChart, formatImportedAtShort, looksLikeSgfText, extractSharedSgfFromSearch, loadSharedSgfText, handleUrlSharedImport, handleClipboardImport, handleSgfFileImport, handlePastedSgfAutoSave, handleParse };
+      return { renderBoard, renderHistory, renderStats, renderAnalysis, renderStorageStatus, createZipBlob, safeSgfFilename, buildSgfArchiveFiles, buildJsonBackupPayload, buildCsvSummary, buildWinRateTrendData, computeDynamicYAxis, availableWinRateIntervals, buildStatsViewHtml, buildAnalysisViewHtml, buildAnalysisGuideViewHtml, buildResultsBreakdownData, buildColorPerformanceChartData, buildResultMethodBreakdownData, buildCaptureDifferentialBuckets, buildGameLengthDistribution, buildAnalysisPriorityDistribution, buildLossProfileTagData, buildCaptureComparisonData, renderWinRateTrendChart, renderBarChart, formatImportedAtShort, extractSgfText, looksLikeSgfText, extractSharedSgfFromSearch, loadSharedSgfText, handleUrlSharedImport, handleClipboardImport, handleSgfFileImport, handlePastedSgfAutoSave, handleParse };
     })();
 
     async function runSmokeTests() {
@@ -7183,6 +7262,12 @@ PW[MariGo1 (1158)]
           const sharedSgf = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[B+1.5]PB[idfji]PW[ShareSmoke];B[ee];W[de];B[ed];W[])`;
           assert("shared sgf detection valid", App.looksLikeSgfText(sharedSgf), "valid sgf");
           assert("shared sgf detection rejects plain text", !App.looksLikeSgfText("not a go game"), "plain text");
+          if (typeof App.extractSgfText === "function") {
+            assert("extractSgfText handles raw SGF", App.extractSgfText(sharedSgf) === sharedSgf, App.extractSgfText(sharedSgf));
+            assert("extractSgfText handles wrapped SGF", App.extractSgfText(`GoQuest Game\n${sharedSgf}\nShared from phone`) === sharedSgf, App.extractSgfText(`GoQuest Game\n${sharedSgf}\nShared from phone`));
+            assert("extractSgfText handles leading/trailing whitespace", App.extractSgfText(`  \n${sharedSgf}  \n`) === sharedSgf, App.extractSgfText(`  \n${sharedSgf}  \n`));
+            assert("extractSgfText handles URL-encoded SGF", App.extractSgfText(encodeURIComponent(sharedSgf)) === sharedSgf, App.extractSgfText(encodeURIComponent(sharedSgf)));
+          }
           assert("url import sgf parameter decodes", App.extractSharedSgfFromSearch(`?sgf=${encodeURIComponent(sharedSgf)}`).text === sharedSgf, "sgf param");
           assert("url import game parameter decodes", App.extractSharedSgfFromSearch(`?game=${encodeURIComponent(sharedSgf)}`).key === "game", "game param");
           assert("url import import parameter decodes", App.extractSharedSgfFromSearch(`?import=${encodeURIComponent(sharedSgf)}`).key === "import", "import param");
@@ -7282,6 +7367,9 @@ PW[MariGo1 (1158)]
             assert("invalid SGF file upload counted as parse failure", mixedSummary.failed === 1, JSON.stringify(mixedSummary));
             assert("upload summary shows imported/skipped/failed counts", /Imported 0 games\. Skipped 1 duplicates\. 1 files could not be parsed\./.test(document.getElementById("addMessage").textContent), document.getElementById("addMessage").textContent);
             assert("upload summary hides opponent names", !document.getElementById("addMessage").textContent.includes("FileOneSmoke") && !document.getElementById("addMessage").textContent.includes("FileTwoSmoke"), document.getElementById("addMessage").textContent);
+            const wrappedFileSgf = `GoQuest Export\n${fileOneSgf}\nEnd`;
+            const wrappedSummary = await App.handleSgfFileImport([{ name: "wrapped.sgf", text: async () => wrappedFileSgf }]);
+            assert("file upload extracts SGF from wrapped text", wrappedSummary.duplicates === 1 || wrappedSummary.imported === 1, JSON.stringify(wrappedSummary));
             await GoStorage.deleteGame(fileOneDraft.sourceHash).catch(() => {});
             await GoStorage.deleteGame(fileTwoDraft.sourceHash).catch(() => {});
           }
@@ -7304,7 +7392,16 @@ PW[MariGo1 (1158)]
             const countAfterDuplicatePaste = (await GoStorage.getAllGames()).length;
             assert("paste duplicate SGF does not save again", duplicatePasteResult.duplicate === true && countAfterDuplicatePaste === countAfterPaste, JSON.stringify({ duplicatePasteResult, countAfterDuplicatePaste, countAfterPaste }));
             const invalidPaste = await App.handlePastedSgfAutoSave("not a go game");
-            assert("paste invalid SGF does not save", invalidPaste.reason === "not-sgf" && document.getElementById("addMessage").textContent.includes("does not look like an SGF game"), JSON.stringify(invalidPaste));
+            assert("paste invalid SGF does not save", invalidPaste.reason === "not-sgf" && document.getElementById("addMessage").textContent.includes("Input does not look like a valid 9x9 SGF game."), JSON.stringify(invalidPaste));
+            const inputSgf = `(;GM[1]SZ[9]KM[7]RU[Chinese]RE[W R]PB[InputSmoke]PW[idfji]C[input-${Date.now()}];B[dd];W[ee])`;
+            const inputDraft = await GoCore.createGameDraft(inputSgf);
+            await GoStorage.deleteGame(inputDraft.sourceHash).catch(() => {});
+            document.getElementById("sgfInput").value = inputSgf;
+            document.getElementById("sgfInput").dispatchEvent(new Event("input", { bubbles: true }));
+            await new Promise(resolve => setTimeout(resolve, 430));
+            const inputSaved = await GoStorage.getGame(inputDraft.sourceHash).catch(() => null);
+            assert("input handler can trigger import when SGF appears", Boolean(inputSaved), Boolean(inputSaved));
+            if (inputSaved) await GoStorage.deleteGame(inputDraft.sourceHash).catch(() => {});
             assert("History updates after pasted/file save", Boolean(document.getElementById("historyContent")), "history content");
             assert("Stats updates after pasted/file save", Boolean(document.getElementById("statsContent")), "stats content");
             assert("Analysis updates after pasted/file save", Boolean(document.getElementById("analysisContent")), "analysis content");
